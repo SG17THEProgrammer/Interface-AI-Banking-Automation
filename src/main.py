@@ -25,6 +25,9 @@ import subprocess
 import sys
 import time
 import threading
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── Make src/ importable ──────────────────────────────────────────────────
 sys.path.insert(0, os.path.dirname(__file__))
@@ -137,7 +140,7 @@ def run_discovery(api_key: str, headless: bool = True) -> CapabilityArtifact:
         api_key=api_key,
         evidence_dir=EVIDENCE_DIR,
         headless=headless,
-        max_steps=20,
+        max_steps=10,
     )
 
     result = agent.run(
@@ -284,7 +287,7 @@ def main():
     ensure_evidence_dir()
 
     # Get API key
-    api_key = os.environ.get("GROQ_API_KEY", "")
+    api_key = os.getenv("GROQ_API_KEY", "")
     if not api_key and args.mode in ("all", "discovery"):
         print("\n❌  GROQ_API_KEY environment variable not set.")
         print("   Set it with:  export GROQ_API_KEY=sk-ant-...")

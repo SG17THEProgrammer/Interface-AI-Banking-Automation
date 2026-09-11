@@ -30,7 +30,7 @@ from hitl import HITLController
 logger = logging.getLogger(__name__)
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-GROQ_MODEL    = "openai/gpt-oss-20b"
+GROQ_MODEL    = "openai/gpt-oss-safeguard-20b"
 
 AGENT_TOOLS = [
     {
@@ -372,7 +372,7 @@ Rules:
 3. Mark type_text as is_parameter=true when the value changes per invocation, set parameter_name.
 4. If you see "not found" or "no record" after searching — call declare_goal_complete with that note.
 5. If stuck after 2 attempts, call escalate_to_human.
-6. Call declare_goal_complete as soon as goal is achieved.
+6. Call declare_goal_complete IMMEDIATELY after extracting balance and status. Do not extract the same data twice.
 7. Only navigate within: {self.guardrails.policy.allowed_domains}
 """
         messages = [{"role": "system", "content": system_prompt}]
