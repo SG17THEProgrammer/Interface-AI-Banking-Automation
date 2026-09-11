@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MemberLink Pro - Update Account</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #e8e8e8; margin: 0; padding: 0; }
+        .header { background: #1a3a6b; color: white; padding: 10px 20px; }
+        .header h1 { margin: 0; font-size: 18px; }
+        .header span { font-size: 12px; color: #aac4ff; }
+        .container { margin: 30px auto; max-width: 700px; }
+        .panel { background: white; border: 1px solid #999; padding: 0; margin-bottom: 12px; }
+        .panel-title { background: #c8d8f0; border-bottom: 1px solid #999; padding: 6px 12px; font-weight: bold; font-size: 13px; color: #1a3a6b; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 8px 12px; font-size: 13px; vertical-align: middle; }
+        td.label { width: 200px; color: #555; font-weight: bold; }
+        .btn { background: #1a3a6b; color: white; border: none; padding: 5px 18px; cursor: pointer; font-size: 13px; }
+        .btn:hover { background: #2a5aab; }
+        .btn-danger { background: #c00; }
+        .btn-back { background: #666; }
+        .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 12px; font-size: 13px; color: #856404; margin: 10px 12px; }
+
+        /* Modal overlay */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; }
+        .modal-box { background: white; border: 2px solid #1a3a6b; width: 400px; margin: 120px auto; padding: 0; }
+        .modal-title { background: #1a3a6b; color: white; padding: 8px 14px; font-weight: bold; font-size: 14px; }
+        .modal-body { padding: 16px; font-size: 13px; line-height: 1.6; }
+        .modal-footer { padding: 10px 14px; border-top: 1px solid #ccc; text-align: right; }
+        .actions { padding: 10px 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MemberLink Pro</h1>
+        <span>Staff Internal Portal &mdash; Authorized Use Only</span>
+    </div>
+    <div class="container">
+        <div class="panel">
+            <div class="panel-title">Update Account &mdash; {{ member.name }} ({{ member_id }})</div>
+            <div class="warning">
+                &#9888; Warning: Account updates are recorded in the audit log. Ensure all changes are authorized.
+            </div>
+            <table>
+                <tr>
+                    <td class="label">New Account Status:</td>
+                    <td>
+                        <select name="new_status" style="font-size:13px;">
+                            <option value="Active">Active</option>
+                            <option value="Frozen">Frozen</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Reason Code:</td>
+                    <td>
+                        <input type="text" name="reason" placeholder="Enter reason code" style="width:200px;padding:3px;font-size:13px;" aria-label="Reason code" />
+                    </td>
+                </tr>
+            </table>
+            <div class="actions">
+                <button class="btn btn-danger" onclick="showConfirmModal()">Update Account</button>
+                &nbsp;
+                <a href="/member/{{ member_id }}" class="btn btn-back">Cancel</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal (the irreversible action dialog) -->
+    <div class="modal-overlay" id="confirmModal" aria-modal="true" role="dialog">
+        <div class="modal-box">
+            <div class="modal-title">Confirm Account Update</div>
+            <div class="modal-body">
+                <p><strong>Are you sure you want to update this account?</strong></p>
+                <p>Member: <strong>{{ member.name }}</strong> (ID: {{ member_id }})</p>
+                <p>This action will be logged in the audit system and <strong>cannot be undone</strong>.</p>
+            </div>
+            <div class="modal-footer">
+                <form method="POST" action="/member/{{ member_id }}/confirm-update" style="display:inline;">
+                    <input type="hidden" name="action" value="confirm" />
+                    <button type="submit" class="btn btn-danger" aria-label="Yes, confirm update">Yes, Update</button>
+                </form>
+                &nbsp;
+                <button class="btn btn-back" onclick="hideConfirmModal()" aria-label="Cancel, go back">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showConfirmModal() {
+            document.getElementById('confirmModal').style.display = 'block';
+        }
+        function hideConfirmModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
