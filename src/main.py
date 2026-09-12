@@ -211,7 +211,7 @@ def run_replay_failure(artifact: CapabilityArtifact, headless: bool = True) -> R
     print_result("Replay — failure/business-outcome case", result)
 
     # Save result summary
-    summary_path = os.path.join(EVIDENCE_DIR, "replay_failure_summary.json")
+    summary_path = os.path.join(EVIDENCE_DIR, "replay_business_outcome_summary.json")
     with open(summary_path, "w") as f:
         json.dump(result.to_dict(), f, indent=2)
     print(f"  📋  Summary saved : {summary_path}")

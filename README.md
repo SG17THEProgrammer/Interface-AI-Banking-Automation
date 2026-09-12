@@ -221,7 +221,7 @@ See `REPORT.md` for the full 7-section design document.
 # Setup (one time)
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt && playwright install chromium
-export GROQ_API_KEY=sk-ant-YOUR_KEY_HERE
+export GROQ_API_KEY=gsk_.....
 
 # Full run (all phases)
 cd src && python main.py --mode all --visible
