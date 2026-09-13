@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automation Run Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #171b26;
+    --surface2: #1e2333;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --info: #38bdf8;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+  .header h1 { font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+  .header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .load-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--sans);
+    transition: border-color 0.15s;
+  }
+  .load-btn:hover { border-color: var(--accent); }
+  .load-btn svg { opacity: 0.6; }
+
+  /* ── Layout ── */
+  .main { padding: 24px 28px; max-width: 1300px; margin: 0 auto; }
+
+  /* ── Drop zone ── */
+  #drop-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: 10px;
+    padding: 56px 32px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    margin-bottom: 28px;
+  }
+  #drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(99,102,241,0.05);
+  }
+  #drop-zone.hidden { display: none; }
+  .drop-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+  .drop-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+  .drop-sub { color: var(--muted); font-size: 12px; line-height: 1.8; }
+  .drop-sub code {
+    font-family: var(--mono);
+    background: var(--surface2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  /* ── Dashboard grid ── */
+  #dashboard { display: none; }
+  #dashboard.visible { display: block; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    margin-top: 28px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* ── Stat cards ── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat-value.success { color: var(--success); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-value.info { color: var(--info); }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Run tabs ── */
+  .run-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .run-tab {
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--sans);
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .run-tab:hover { border-color: var(--border2); color: var(--text); }
+  .run-tab.active { border-color: var(--accent); color: var(--accent2); background: rgba(99,102,241,0.08); }
+  .run-tab .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot.success { background: var(--success); }
+  .dot.warn    { background: var(--warn); }
+  .dot.danger  { background: var(--danger); }
+  .dot.info    { background: var(--info); }
+
+  /* ── Timeline ── */
+  .timeline {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .timeline-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .timeline-row {
+    display: flex;
+    align-items: center;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    transition: background 0.1s;
+  }
+  .timeline-row:last-child { border-bottom: none; }
+  .timeline-row:hover { background: var(--surface2); }
+  .tl-step {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .tl-action {
+    width: 70px;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+  .tl-bar-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; }
+  .tl-bar { height: 100%; border-radius: 3px; min-width: 2px; }
+  .tl-dur { font-size: 11px; color: var(--muted); width: 52px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .tl-outcome { width: 80px; flex-shrink: 0; }
+  .tl-desc { flex: 1; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .tag.success { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .tag.warn    { background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .tag.danger  { background: rgba(239,68,68,0.12);  color: #f87171; }
+  .tag.info    { background: rgba(56,189,248,0.12);  color: #38bdf8; }
+  .tag.muted   { background: rgba(255,255,255,0.05); color: var(--muted); }
+
+  .action-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: var(--mono);
+  }
+  .ab-navigate { background: rgba(99,102,241,0.12); color: #818cf8; }
+  .ab-type     { background: rgba(56,189,248,0.12);  color: #38bdf8; }
+  .ab-click    { background: rgba(34,197,94,0.12);   color: #4ade80; }
+  .ab-extract  { background: rgba(245,158,11,0.12);  color: #fbbf24; }
+  .ab-assert   { background: rgba(168,85,247,0.12);  color: #c084fc; }
+  .ab-other    { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+  /* ── Chart containers ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 700px) { .charts-row { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .chart-card-title {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+  .chart-wrap { position: relative; width: 100%; height: 180px; }
+
+  /* ── Event log ── */
+  .log-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .log-filter-bar {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .log-filter {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.12s;
+  }
+  .log-filter.on { border-color: var(--accent); color: var(--accent2); background: rgba(99,102,241,0.08); }
+  .log-scroll { max-height: 320px; overflow-y: auto; }
+  .log-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    transition: background 0.1s;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-row:hover { background: var(--surface2); }
+  .log-ts { color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .log-event { color: var(--accent2); white-space: nowrap; flex-shrink: 0; min-width: 180px; }
+  .log-data { color: var(--text); opacity: 0.6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .log-row.ev-error .log-event { color: var(--danger); }
+  .log-row.ev-warn  .log-event { color: var(--warn); }
+  .log-row.ev-hitl  .log-event { color: #c084fc; }
+  .log-row.ev-done  .log-event { color: var(--success); }
+
+  /* ── HITL card ── */
+  .hitl-card {
+    background: rgba(192,132,252,0.05);
+    border: 1px solid rgba(192,132,252,0.2);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .hitl-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .hitl-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(192,132,252,0.12);
+    color: #c084fc;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .hitl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 20px;
+    font-size: 11px;
+  }
+  .hitl-key { color: var(--muted); }
+  .hitl-val { font-family: var(--mono); font-size: 10px; }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 32px; color: var(--muted); font-size: 12px; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── Legend ── */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo">A</div>
+    <div>
+      <h1>Automation Run Dashboard</h1>
+      <div class="header-sub" id="header-sub">Computer-Use Automation System · evidence/ viewer</div>
+    </div>
+  </div>
+  <button class="load-btn" onclick="document.getElementById('file-input').click()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4-4 4M12 6v10"/>
+    </svg>
+    Load log files
+  </button>
+  <input type="file" id="file-input" multiple accept=".log,.json" style="display:none" onchange="handleFileInput(this.files)">
+</header>
+
+<main class="main">
+
+  <!-- Drop zone -->
+  <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div class="drop-icon">⌗</div>
+    <div class="drop-title">Drop your evidence/ log files here</div>
+    <div class="drop-sub">
+      Accepts any combination of:<br>
+      <code>discovery_run.log</code> &nbsp; <code>replay_success.log</code> &nbsp;
+      <code>replay_business_outcome.log</code> &nbsp; <code>replay_hitl_test.log</code><br>
+      <code>replay_*.log</code> &nbsp; <code>*_summary.json</code> &nbsp;
+      <code>interventions/*.json</code><br><br>
+      Or click to browse. Multiple files OK.
+    </div>
+  </div>
+
+  <!-- Dashboard (shown after load) -->
+  <div id="dashboard">
+
+    <!-- Overview stats -->
+    <div class="section-title">Overview</div>
+    <div class="stat-row" id="stat-row"></div>
+
+    <!-- Per-run tabs -->
+    <div class="section-title" style="margin-top:24px">Runs loaded</div>
+    <div class="run-tabs" id="run-tabs"></div>
+
+    <!-- Per-run detail -->
+    <div id="run-detail"></div>
+
+    <!-- HITL interventions -->
+    <div id="hitl-section" style="display:none">
+      <div class="section-title">HITL interventions</div>
+      <div id="hitl-cards"></div>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ── State ── */
+const state = {
+  runs: [],          // [{name, events, type}]
+  interventions: [], // parsed intervention JSON objects
+  activeRun: 0,
+  charts: {},
+};
+
+/* ── File loading ── */
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFileInput(e.dataTransfer.files);
+});
+
+function handleFileInput(files) {
+  const promises = Array.from(files).map(f => readFile(f));
+  Promise.all(promises).then(() => render());
+}
+
+function readFile(file) {
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => {
+      const text = e.target.result;
+      const name = file.name;
+
+      if (name.endsWith('.log')) {
+        const events = parseNDJSON(text);
+        if (events.length > 0) {
+          const type = inferRunType(name, events);
+          state.runs.push({ name, events, type });
+        }
+      } else if (name.endsWith('.json')) {
+        try {
+          const obj = JSON.parse(text);
+          // Intervention file
+          if (obj.request_id && obj.reason) {
+            state.interventions.push(obj);
+          }
+          // Summary JSON — convert to pseudo-events for display
+          else if (obj.outcome_type) {
+            const events = summaryToEvents(obj, name);
+            state.runs.push({ name, events, type: obj.outcome_type, summary: obj });
+          }
+        } catch(e) {}
+      }
+      resolve();
+    };
+    r.readAsText(file);
+  });
+}
+
+function parseNDJSON(text) {
+  return text.trim().split('\n').flatMap(line => {
+    try { return [JSON.parse(line)]; } catch(e) { return []; }
+  });
+}
+
+function inferRunType(name, events) {
+  if (name.includes('discovery')) return 'discovery';
+  const last = events.find(e => e.event === 'replay_complete');
+  if (last) return 'success';
+  const bo = events.find(e => e.event === 'business_outcome_detected');
+  if (bo) return 'business_outcome';
+  const hitl = events.find(e => e.event === 'hitl_resolved' || e.event === 'hitl_escalation');
+  if (hitl) return 'hitl';
+  return 'failure';
+}
+
+function summaryToEvents(obj, name) {
+  const events = [];
+  if (obj.log_entries && obj.log_entries.length > 0) return obj.log_entries;
+  // Minimal synthetic events
+  events.push({ event: 'replay_start', capability: obj.outputs ? 'replay' : 'run', ts: new Date().toISOString() });
+  if (obj.success) events.push({ event: 'replay_complete', outputs: obj.outputs, steps: obj.steps_completed, ts: new Date().toISOString() });
+  else if (obj.business_outcome) events.push({ event: 'business_outcome_detected', outcome: obj.business_outcome, ts: new Date().toISOString() });
+  else events.push({ event: 'replay_error', error: obj.error, ts: new Date().toISOString() });
+  return events;
+}
+
+/* ── Render ── */
+function render() {
+  if (state.runs.length === 0 && state.interventions.length === 0) return;
+
+  dropZone.classList.add('hidden');
+  document.getElementById('dashboard').classList.add('visible');
+
+  renderStats();
+  renderTabs();
+  renderRunDetail(state.activeRun);
+  renderHITL();
+  updateHeader();
+}
+
+function updateHeader() {
+  const total = state.runs.length;
+  const files = state.runs.map(r => r.name).join(', ');
+  document.getElementById('header-sub').textContent =
+    `${total} run${total !== 1 ? 's' : ''} loaded · ${files}`;
+}
+
+function renderStats() {
+  const allEvents = state.runs.flatMap(r => r.events);
+
+  const successRuns = state.runs.filter(r => r.type === 'success').length;
+  const boRuns      = state.runs.filter(r => r.type === 'business_outcome').length;
+  const failRuns    = state.runs.filter(r => r.type === 'failure').length;
+  const hitlRuns    = state.runs.filter(r => r.type === 'hitl').length;
+  const discRuns    = state.runs.filter(r => r.type === 'discovery').length;
+
+  // Total duration across replay runs
+  const totalDur = state.runs.reduce((acc, run) => {
+    const start = run.events.find(e => e.ts || e.timestamp);
+    const end   = [...run.events].reverse().find(e => e.ts || e.timestamp);
+    if (start && end) {
+      const s = new Date(start.ts || start.timestamp);
+      const en = new Date(end.ts || end.timestamp);
+      return acc + (en - s) / 1000;
+    }
+    return acc;
+  }, 0);
+
+  const totalSteps = allEvents.filter(e => e.event === 'step_done').length;
+  const retries    = allEvents.filter(e => e.event === 'step_retry').length;
+  const hitlEvents = allEvents.filter(e => e.event === 'hitl_resolved' || e.event === 'hitl_escalation').length + state.interventions.length;
+
+  const statEl = document.getElementById('stat-row');
+  statEl.innerHTML = `
+    ${statCard('Total runs', state.runs.length, '', 'info')}
+    ${statCard('Successful', successRuns, `${state.runs.length ? Math.round(successRuns/state.runs.length*100) : 0}% success rate`, 'success')}
+    ${statCard('Business outcomes', boRuns, 'valid non-crash results', 'warn')}
+    ${statCard('Hard failures', failRuns, 'steps that crashed', 'danger')}
+    ${statCard('HITL escalations', hitlEvents, 'human interventions', hitlEvents > 0 ? 'warn' : '')}
+    ${statCard('Steps executed', totalSteps, `${retries} retr${retries === 1 ? 'y' : 'ies'}`, 'info')}
+    ${statCard('Total duration', totalDur.toFixed(1) + 's', `across all runs`, '')}
+    ${discRuns > 0 ? statCard('Discovery runs', discRuns, 'LLM-driven', 'info') : ''}
+  `;
+}
+
+function statCard(label, value, sub, cls) {
+  return `<div class="stat-card">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value ${cls}">${value}</div>
+    ${sub ? `<div class="stat-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('run-tabs');
+  const dotClass = r =>
+    r.type === 'success' ? 'success' :
+    r.type === 'business_outcome' ? 'warn' :
+    r.type === 'hitl' ? 'warn' :
+    r.type === 'discovery' ? 'info' : 'danger';
+
+  tabs.innerHTML = state.runs.map((run, i) => `
+    <button class="run-tab ${i === state.activeRun ? 'active' : ''}" onclick="setActiveRun(${i})">
+      <span class="dot ${dotClass(run)}"></span>
+      ${run.name}
+    </button>
+  `).join('');
+}
+
+function setActiveRun(i) {
+  state.activeRun = i;
+  renderTabs();
+  renderRunDetail(i);
+}
+
+function renderRunDetail(i) {
+  if (i >= state.runs.length) return;
+  const run = state.runs[i];
+  const el = document.getElementById('run-detail');
+
+  el.innerHTML = `
+    <div class="section-title">Step timeline — ${run.name}</div>
+    ${renderTimeline(run)}
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-card-title">Step duration breakdown (ms)</div>
+        <div class="chart-wrap"><canvas id="dur-chart" role="img" aria-label="Step duration bar chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Action type distribution</div>
+        <div class="chart-wrap"><canvas id="action-chart" role="img" aria-label="Action type distribution pie chart"></canvas></div>
+      </div>
+    </div>
+    <div class="section-title">Event log — ${run.name}</div>
+    ${renderEventLog(run)}
+  `;
+
+  // Destroy old charts before creating new ones
+  ['dur-chart', 'action-chart'].forEach(id => {
+    const existing = Chart.getChart(id);
+    if (existing) existing.destroy();
+  });
+
+  renderCharts(run);
+}
+
+function renderTimeline(run) {
+  const steps = extractSteps(run.events);
+  if (steps.length === 0) return '<div class="empty">No step events found in this log.</div>';
+
+  const maxDur = Math.max(...steps.map(s => s.dur), 1);
+
+  const barColor = s => {
+    if (!s.success) return '#ef4444';
+    const a = s.action;
+    if (a === 'navigate') return '#818cf8';
+    if (a === 'type')     return '#38bdf8';
+    if (a === 'click')    return '#22c55e';
+    if (a === 'extract')  return '#f59e0b';
+    if (a === 'assert')   return '#c084fc';
+    return '#6b7280';
+  };
+
+  const rows = steps.map(s => `
+    <div class="timeline-row">
+      <span class="tl-step">${s.id}</span>
+      <span class="tl-action"><span class="action-badge ab-${s.action}">${s.action}</span></span>
+      <div class="tl-bar-wrap">
+        <div class="tl-bar" style="width:${Math.max(2, s.dur/maxDur*100)}%;background:${barColor(s)};opacity:${s.success ? 0.8 : 1}"></div>
+      </div>
+      <span class="tl-dur">${s.dur > 0 ? s.dur + 'ms' : '—'}</span>
+      <span class="tl-outcome"><span class="tag ${s.success ? 'success' : 'danger'}">${s.success ? 'ok' : 'failed'}</span></span>
+      <span class="tl-desc">${escHtml(s.desc)}</span>
+    </div>
+  `).join('');
+
+  const boEvent = run.events.find(e => e.event === 'business_outcome_detected');
+  const boRow = boEvent ? `
+    <div class="timeline-row" style="background:rgba(245,158,11,0.04)">
+      <span class="tl-step">BO</span>
+      <span class="tl-action"><span class="tag warn">outcome</span></span>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#f59e0b;opacity:0.4"></div></div>
+      <span class="tl-dur">—</span>
+      <span class="tl-outcome"><span class="tag warn">business</span></span>
+      <span class="tl-desc">${escHtml((boEvent.outcome || '').slice(0, 80))}</span>
+    </div>` : '';
+
+  const completeEvent = run.events.find(e => e.event === 'replay_complete' || e.event === 'goal_complete');
+  const completeRow = completeEvent ? `
+    <div class="timeline-row" style="background:rgba(34,197,94,0.04)">
+      <span class="tl-step">✓</span>
+      <span class="tl-action"><span class="tag success">complete</span></span>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#22c55e;opacity:0.5"></div></div>
+      <span class="tl-dur">—</span>
+      <span class="tl-outcome"><span class="tag success">done</span></span>
+      <span class="tl-desc">${completeEvent.summary || JSON.stringify(completeEvent.outputs || {}).slice(0, 80)}</span>
+    </div>` : '';
+
+  return `<div class="timeline">
+    <div class="timeline-header">
+      <span>step &nbsp; action &nbsp; duration bar &nbsp; dur &nbsp; status &nbsp; description</span>
+      <span>${steps.length} step${steps.length !== 1 ? 's' : ''}</span>
+    </div>
+    ${rows}${boRow}${completeRow}
+  </div>`;
+}
+
+function renderCharts(run) {
+  const steps = extractSteps(run.events);
+  const isDark = true;
+  const gridColor = 'rgba(255,255,255,0.05)';
+  const textColor = '#6b7280';
+
+  // Duration chart
+  if (steps.length > 0) {
+    const durCtx = document.getElementById('dur-chart');
+    if (durCtx) {
+      new Chart(durCtx, {
+        type: 'bar',
+        data: {
+          labels: steps.map(s => s.id),
+          datasets: [{
+            label: 'Duration (ms)',
+            data: steps.map(s => s.dur),
+            backgroundColor: steps.map(s => s.success ? 'rgba(99,102,241,0.6)' : 'rgba(239,68,68,0.6)'),
+            borderRadius: 3,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } },
+            y: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor },
+                 title: { display: true, text: 'ms', color: textColor, font: { size: 10 } } }
+          }
+        }
+      });
+    }
+  }
+
+  // Action type donut
+  const actionCtx = document.getElementById('action-chart');
+  if (actionCtx) {
+    const actionCounts = {};
+    run.events.filter(e => e.event === 'step_done').forEach(e => {
+      const a = e.result?.action || 'unknown';
+      actionCounts[a] = (actionCounts[a] || 0) + 1;
+    });
+    // Also count from discovery tool calls
+    run.events.filter(e => e.event === 'tool_call').forEach(e => {
+      const a = e.tool || 'unknown';
+      actionCounts[a] = (actionCounts[a] || 0) + 1;
+    });
+
+    const labels = Object.keys(actionCounts);
+    const palette = ['#818cf8','#38bdf8','#22c55e','#f59e0b','#c084fc','#f87171','#6b7280'];
+
+    if (labels.length > 0) {
+      new Chart(actionCtx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: labels.map(k => actionCounts[k]),
+            backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+            borderColor: '#171b26',
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              display: true,
+              position: 'right',
+              labels: { color: textColor, font: { size: 10 }, boxWidth: 10, padding: 8 }
+            }
+          }
+        }
+      });
+    } else {
+      actionCtx.parentElement.innerHTML = '<div class="empty">No action events found.</div>';
+    }
+  }
+}
+
+function renderEventLog(run) {
+  const categories = ['all', 'step', 'llm', 'hitl', 'error', 'output'];
+
+  const categorize = ev => {
+    const e = ev.event || '';
+    if (e.includes('step')) return 'step';
+    if (e.includes('llm') || e.includes('tool')) return 'llm';
+    if (e.includes('hitl') || e.includes('intervention')) return 'hitl';
+    if (e.includes('error') || e.includes('fail')) return 'error';
+    if (e.includes('output') || e.includes('extract') || e.includes('complete')) return 'output';
+    return 'other';
+  };
+
+  const rowClass = ev => {
+    const e = ev.event || '';
+    if (e.includes('error') || e.includes('fail')) return 'ev-error';
+    if (e.includes('retry') || e.includes('recover')) return 'ev-warn';
+    if (e.includes('hitl') || e.includes('intervention')) return 'ev-hitl';
+    if (e.includes('complete') || e.includes('success') || e.includes('extracted')) return 'ev-done';
+    return '';
+  };
+
+  const fmtData = ev => {
+    const skip = ['event','ts','timestamp'];
+    const parts = Object.entries(ev)
+      .filter(([k]) => !skip.includes(k))
+      .map(([k,v]) => `${k}:${JSON.stringify(v)}`)
+      .join(' · ');
+    return parts.slice(0, 120);
+  };
+
+  const fmtTs = ev => {
+    const ts = ev.ts || ev.timestamp || '';
+    if (!ts) return '—';
+    try { return new Date(ts).toISOString().slice(11, 23); } catch(e) { return ts.slice(0, 12); }
+  };
+
+  const rows = run.events.map((ev, idx) => {
+    const cat = categorize(ev);
+    return `<div class="log-row ${rowClass(ev)}" data-cat="${cat}">
+      <span class="log-ts">${fmtTs(ev)}</span>
+      <span class="log-event">${escHtml(ev.event || '?')}</span>
+      <span class="log-data">${escHtml(fmtData(ev))}</span>
+    </div>`;
+  }).join('');
+
+  const filterBtns = categories.map(c =>
+    `<button class="log-filter ${c === 'all' ? 'on' : ''}" data-filter="${c}" onclick="filterLog(this)">${c}</button>`
+  ).join('');
+
+  return `<div class="log-wrap">
+    <div class="log-filter-bar">${filterBtns}</div>
+    <div class="log-scroll" id="log-scroll">${rows}</div>
+  </div>`;
+}
+
+function filterLog(btn) {
+  document.querySelectorAll('.log-filter').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const filter = btn.dataset.filter;
+  document.querySelectorAll('#log-scroll .log-row').forEach(row => {
+    if (filter === 'all') { row.style.display = ''; return; }
+    row.style.display = row.dataset.cat === filter ? '' : 'none';
+  });
+}
+
+function renderHITL() {
+  if (state.interventions.length === 0) {
+    document.getElementById('hitl-section').style.display = 'none';
+    return;
+  }
+  document.getElementById('hitl-section').style.display = 'block';
+
+  const cards = state.interventions.map(req => `
+    <div class="hitl-card">
+      <div class="hitl-header">
+        <span class="hitl-badge">🛑 HITL intervention</span>
+        <span class="tag ${req.status === 'resolved' ? 'success' : 'warn'}">${req.status}</span>
+        <span style="color:var(--muted);font-size:11px;margin-left:auto">${req.severity?.toUpperCase()} severity</span>
+      </div>
+      <div class="hitl-grid">
+        <span class="hitl-key">Request ID</span><span class="hitl-val">${req.request_id}</span>
+        <span class="hitl-key">Capability</span><span class="hitl-val">${req.capability_name}</span>
+        <span class="hitl-key">Stuck at step</span><span class="hitl-val">${req.current_step_id}</span>
+        <span class="hitl-key">Reason</span><span class="hitl-val" style="white-space:normal">${escHtml(req.reason || '')}</span>
+        <span class="hitl-key">URL when stuck</span><span class="hitl-val">${req.current_url}</span>
+        <span class="hitl-key">Created</span><span class="hitl-val">${req.created_at?.slice(0,19).replace('T',' ')}</span>
+        ${req.human_notes ? `<span class="hitl-key">Human notes</span><span class="hitl-val">${escHtml(req.human_notes)}</span>` : ''}
+        ${req.screenshot_path ? `<span class="hitl-key">Screenshot</span><span class="hitl-val">${escHtml(req.screenshot_path)}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('hitl-cards').innerHTML = cards;
+}
+
+/* ── Helpers ── */
+function extractSteps(events) {
+  const starts = {};
+  const results = [];
+
+  events.forEach(e => {
+    if (e.event === 'step_start') {
+      starts[e.step_id] = new Date(e.ts || e.timestamp || 0);
+    }
+    if (e.event === 'step_done') {
+      const start = starts[e.step_id];
+      const end   = new Date(e.ts || e.timestamp || 0);
+      const dur   = start ? Math.round(end - start) : 0;
+      results.push({
+        id:      e.step_id || '?',
+        action:  e.result?.action || '?',
+        success: e.result?.success ?? true,
+        desc:    e.result?.strategy_used
+                   ? `via ${e.result.strategy_used}`
+                   : e.result?.url || e.result?.typed || '',
+        dur:     dur >= 0 ? dur : 0,
+      });
+    }
+  });
+
+  return results;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

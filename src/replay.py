@@ -406,6 +406,7 @@ class ReplayEngine:
         try:
             self.guardrails.validate_parameters(parameters, artifact.parameters)
         except ValueError as e:
+            self._save_log(run_log, "hard_failure")
             return ReplayResult(
                 outcome_type="hard_failure",
                 success=False,
