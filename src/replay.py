@@ -63,8 +63,10 @@ class ReplayResult:
     """
     outcome_type: str          # "success" | "business_outcome" | "recoverable_retried" | "hard_failure" | "hitl_escalated"
     success: bool
-    outputs: dict              # Typed data extracted during replay (only on success)
-    business_outcome: Optional[str] = None   # Human-readable outcome if not success
+    # Typed data extracted during replay (only on success)
+    outputs: dict
+    # Human-readable outcome if not success
+    business_outcome: Optional[str] = None
     error: Optional[str] = None              # Error message on hard failure
     failed_step_id: Optional[str] = None
     expected_state: Optional[str] = None
@@ -254,16 +256,19 @@ def execute_step(
 
         elif step.action == "type":
             if not step.locators:
-                raise RuntimeError(f"Step {step.step_id}: no locators defined for type action")
+                raise RuntimeError(
+                    f"Step {step.step_id}: no locators defined for type action")
             el, strat, val = resolve_element(page, step.locators)
             el.fill("")
             el.type(str(value) if value else "")
             page.wait_for_timeout(step.wait_after_ms)
-            result.update({"success": True, "strategy_used": strat, "typed": value})
+            result.update(
+                {"success": True, "strategy_used": strat, "typed": value})
 
         elif step.action == "click":
             if not step.locators:
-                raise RuntimeError(f"Step {step.step_id}: no locators defined for click action")
+                raise RuntimeError(
+                    f"Step {step.step_id}: no locators defined for click action")
             el, strat, val = resolve_element(page, step.locators)
             el.click()
             page.wait_for_timeout(step.wait_after_ms)
@@ -400,11 +405,13 @@ class ReplayEngine:
             run_log.append(entry)
             logger.info(f"[replay] {json.dumps(entry)}")
 
-        log({"event": "replay_start", "capability": artifact.name, "params": self.guardrails.redact_dict(parameters)})
+        log({"event": "replay_start", "capability": artifact.name,
+            "params": self.guardrails.redact_dict(parameters)})
 
         # Validate parameters against schema
         try:
-            self.guardrails.validate_parameters(parameters, artifact.parameters)
+            self.guardrails.validate_parameters(
+                parameters, artifact.parameters)
         except ValueError as e:
             self._save_log(run_log, "hard_failure")
             return ReplayResult(
@@ -417,23 +424,31 @@ class ReplayEngine:
             )
 
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=self.headless)
-            context = browser.new_context(viewport={"width": 1280, "height": 900})
+            browser = pw.chromium.launch(
+                headless=self.headless,
+                args=["--no-sandbox", "--disable-dev-shm-usage"],
+                slow_mo=80 if not self.headless else 0,
+            )
+            context = browser.new_context(
+                viewport={"width": 1280, "height": 900})
             page = context.new_page()
             screenshot_path = None
 
             try:
                 for step in artifact.steps:
-                    log({"event": "step_start", "step_id": step.step_id, "action": step.action, "url": page.url})
+                    log({"event": "step_start", "step_id": step.step_id,
+                        "action": step.action, "url": page.url})
 
                     # Check for business outcomes before attempting the step
                     # (only after navigation, when a result page might be showing)
                     if step.action in ("assert", "extract") or steps_completed > 2:
                         outcome = check_for_business_outcome(page)
                         if outcome:
-                            log({"event": "business_outcome_detected", "outcome": outcome})
+                            log({"event": "business_outcome_detected",
+                                "outcome": outcome})
                             # Save log and return as business outcome
-                            self._save_log(run_log, log_suffix="business_outcome")
+                            self._save_log(
+                                run_log, log_suffix="business_outcome")
                             return ReplayResult(
                                 outcome_type="business_outcome",
                                 success=False,
@@ -446,13 +461,15 @@ class ReplayEngine:
 
                     # Try to recover from any transient blocking conditions
                     if try_recover_page(page):
-                        log({"event": "recovered_blocking_condition", "step": step.step_id})
+                        log({"event": "recovered_blocking_condition",
+                            "step": step.step_id})
                         retries_used += 1
 
                     # Execute step with retry
                     step_result = None
                     for attempt in range(self.max_retries + 1):
-                        step_result = execute_step(page, step, parameters, self.guardrails)
+                        step_result = execute_step(
+                            page, step, parameters, self.guardrails)
                         if step_result.get("success"):
                             break
                         if attempt < self.max_retries:
@@ -462,11 +479,13 @@ class ReplayEngine:
                             retries_used += 1
                             try_recover_page(page)
 
-                    log({"event": "step_done", "step_id": step.step_id, "result": step_result})
+                    log({"event": "step_done", "step_id": step.step_id,
+                        "result": step_result})
 
                     if not step_result.get("success"):
                         # Take a failure screenshot
-                        screenshot_path = self._screenshot(page, f"failure_{step.step_id}")
+                        screenshot_path = self._screenshot(
+                            page, f"failure_{step.step_id}")
                         log({"event": "step_failed", "step_id": step.step_id,
                              "error": step_result.get("error"), "screenshot": screenshot_path})
 
@@ -496,7 +515,8 @@ class ReplayEngine:
                                 current_step_id=step.step_id,
                                 current_step_description=step.description,
                                 reason=step_result.get("error", "Step failed"),
-                                context={"parameters": parameters, "steps_completed": steps_completed},
+                                context={"parameters": parameters,
+                                         "steps_completed": steps_completed},
                                 non_interactive=non_interactive,
                             )
                             if hitl_result["resolved"]:
@@ -529,20 +549,25 @@ class ReplayEngine:
                 extracted = {}
                 for output_field in artifact.outputs:
                     try:
-                        value = extract_output(page, output_field, self.guardrails)
+                        value = extract_output(
+                            page, output_field, self.guardrails)
                         extracted[output_field.name] = value
-                        log({"event": "output_extracted", "field": output_field.name, "value": str(value)[:100]})
+                        log({"event": "output_extracted",
+                            "field": output_field.name, "value": str(value)[:100]})
                     except Exception as e:
-                        log({"event": "output_extraction_failed", "field": output_field.name, "error": str(e)})
+                        log({"event": "output_extraction_failed",
+                            "field": output_field.name, "error": str(e)})
                         extracted[output_field.name] = None
 
                 # Final screenshot
                 screenshot_path = self._screenshot(page, "replay_final")
-                log({"event": "replay_complete", "outputs": extracted, "steps": steps_completed})
+                log({"event": "replay_complete",
+                    "outputs": extracted, "steps": steps_completed})
 
             except Exception as e:
                 screenshot_path = self._screenshot(page, "replay_error")
-                log({"event": "replay_error", "error": str(e), "trace": traceback.format_exc()})
+                log({"event": "replay_error", "error": str(
+                    e), "trace": traceback.format_exc()})
                 self._save_log(run_log, "failure")
                 return ReplayResult(
                     outcome_type="hard_failure",

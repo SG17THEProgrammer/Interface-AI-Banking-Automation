@@ -4,25 +4,31 @@ Human-in-the-Loop (HITL) Escalation
 When automation is stuck, hits an irreversible action it can't confirm,
 or encounters something it cannot safely handle, this module:
 
-  1. Pauses execution (keeping the browser window open)
-  2. Emits a structured intervention request with full context
-  3. Waits for the human to complete the manual action
-  4. Verifies the new state and hands control back to automation
+  1. Pauses execution — keeps the browser window OPEN and VISIBLE
+  2. Annotates a screenshot with exactly what went wrong (red box, error
+     text, step ID, timestamp) so the human knows at a glance
+  3. Prints a structured intervention notice to the terminal
+  4. Blocks on input() — the human fixes it in the live browser window
+  5. Verifies the new page state and hands control back to automation
 
 Design decisions:
-- The same Playwright page object is passed through — the human operates
+- The SAME Playwright page object is passed through — the human operates
   the LIVE browser session, not a new one. Session continuity is preserved.
-- The intervention request is persisted to disk so it can be routed to a
-  real operator queue in a production system (email, Slack, ticket system).
-- Control transfer signal is CLI-based (press Enter) for this implementation,
-  with a clear design for a REST-based signal in production.
-- Everything the human does during control is recorded for audit.
+- The browser is launched NON-HEADLESS when HITL is possible, so the
+  window is actually visible for the human to interact with.
+- Screenshots are annotated with PIL: red error banner, step ID, reason,
+  timestamp — raw screenshots are useless without context.
+- The intervention request is persisted to disk (JSON) so it can be routed
+  to Slack / ticketing / REST webhook in production.
+- Control transfer signal is CLI-based (press Enter) for this implementation.
+  In production, replace input() with a REST endpoint or WebSocket signal.
 """
 
 from __future__ import annotations
 import json
 import os
 import time
+import textwrap
 import logging
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
@@ -32,6 +38,136 @@ if TYPE_CHECKING:
     from playwright.sync_api import Page
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Screenshot annotation
+# ---------------------------------------------------------------------------
+
+def annotate_screenshot(
+    raw_path: str,
+    step_id: str,
+    reason: str,
+    current_url: str,
+    out_path: str = None,
+) -> str:
+    """
+    Take a raw Playwright screenshot and annotate it so a human immediately
+    understands what went wrong:
+      - Semi-transparent dark overlay across the top
+      - RED banner bar: "⚠ AUTOMATION STUCK — HUMAN INTERVENTION REQUIRED"
+      - Step ID, reason (word-wrapped), URL, timestamp
+      - Red dashed border around the whole image
+
+    Returns the path to the annotated image (overwrites in-place if out_path
+    is None).
+    """
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        logger.warning("[hitl] Pillow not installed — skipping screenshot annotation")
+        return raw_path
+
+    out_path = out_path or raw_path
+
+    try:
+        img = Image.open(raw_path).convert("RGBA")
+        W, H = img.size
+
+        # ── Overlay layer ──────────────────────────────────────────────────
+        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+
+        BANNER_H = 110          # top banner height in pixels
+        BORDER   = 6            # red border thickness
+
+        # dark semi-transparent top banner
+        draw.rectangle([(0, 0), (W, BANNER_H)], fill=(15, 10, 10, 210))
+
+        # red dashed border around whole image
+        for t in range(BORDER):
+            draw.rectangle(
+                [(t, t), (W - 1 - t, H - 1 - t)],
+                outline=(220, 40, 40, 200),
+            )
+
+        # ── Text ───────────────────────────────────────────────────────────
+        # Try to load a monospace font; fall back to default if unavailable
+        def load_font(size):
+            for name in [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+                "/System/Library/Fonts/Menlo.ttc",
+                "C:/Windows/Fonts/consola.ttf",
+            ]:
+                try:
+                    return ImageFont.truetype(name, size)
+                except Exception:
+                    pass
+            return ImageFont.load_default()
+
+        def load_font_regular(size):
+            for name in [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+                "/System/Library/Fonts/Menlo.ttc",
+                "C:/Windows/Fonts/consola.ttf",
+            ]:
+                try:
+                    return ImageFont.truetype(name, size)
+                except Exception:
+                    pass
+            return ImageFont.load_default()
+
+        font_title  = load_font(15)
+        font_body   = load_font_regular(11)
+
+        # Red alert bar
+        draw.rectangle([(0, 0), (W, 28)], fill=(190, 30, 30, 240))
+        draw.text(
+            (12, 6),
+            "⚠  AUTOMATION STUCK — HUMAN INTERVENTION REQUIRED",
+            font=font_title,
+            fill=(255, 220, 220, 255),
+        )
+
+        # Step + timestamp line
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        draw.text(
+            (12, 34),
+            f"Step: {step_id}    |    {ts}",
+            font=font_body,
+            fill=(180, 180, 180, 220),
+        )
+
+        # URL line
+        url_display = current_url[:110] + "…" if len(current_url) > 110 else current_url
+        draw.text(
+            (12, 52),
+            f"URL:  {url_display}",
+            font=font_body,
+            fill=(140, 180, 255, 220),
+        )
+
+        # Reason — word-wrap to fit banner width
+        reason_clean = reason.split("\n")[0][:200]   # first line, max 200 chars
+        wrapped = textwrap.fill(reason_clean, width=int(W / 7))
+        draw.text(
+            (12, 70),
+            f"Why:  {wrapped}",
+            font=font_body,
+            fill=(255, 160, 100, 230),
+        )
+
+        # Merge overlay onto image
+        combined = Image.alpha_composite(img, overlay)
+        combined.convert("RGB").save(out_path, "PNG")
+        logger.info(f"[hitl] Annotated screenshot saved: {out_path}")
+        return out_path
+
+    except Exception as e:
+        logger.warning(f"[hitl] Screenshot annotation failed: {e}")
+        return raw_path
 
 
 # ---------------------------------------------------------------------------
@@ -49,14 +185,14 @@ class InterventionRequest:
     goal: str
     current_step_id: str
     current_step_description: str
-    reason: str                    # Why automation is escalating
+    reason: str
     current_url: str
     screenshot_path: Optional[str]
-    context: dict                  # Additional state info
-    severity: str = "medium"       # "low" | "medium" | "high"
+    context: dict
+    severity: str = "medium"
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    status: str = "pending"        # "pending" | "in_progress" | "resolved"
-    human_notes: str = ""          # Filled in when human resolves
+    status: str = "pending"
+    human_notes: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -76,10 +212,15 @@ class InterventionRequest:
 class HITLController:
     """
     Manages the pause → human-takes-control → resume lifecycle.
+
+    Key design: the Playwright Page object is kept alive throughout.
+    The human operates the exact same browser instance — same cookies,
+    same session state, same filled forms.
     """
 
     def __init__(self, evidence_dir: str = "evidence", headless: bool = False):
         self.evidence_dir = evidence_dir
+        # headless=False is critical for real HITL — the window must be visible
         self.headless = headless
         self._intervention_counter = 0
 
@@ -89,17 +230,36 @@ class HITLController:
         return f"HITL_{ts}_{self._intervention_counter:03d}"
 
     def _take_screenshot(self, page: "Page", request_id: str) -> Optional[str]:
-        """Capture a screenshot of the current browser state."""
+        """Capture a raw screenshot of the current browser state."""
         try:
             screenshot_dir = os.path.join(self.evidence_dir, "screenshots")
             os.makedirs(screenshot_dir, exist_ok=True)
-            path = os.path.join(screenshot_dir, f"{request_id}.png")
-            page.screenshot(path=path)
-            logger.info(f"[hitl] Screenshot saved: {path}")
+            path = os.path.join(screenshot_dir, f"{request_id}_raw.png")
+            page.screenshot(path=path, full_page=False)
+            logger.info(f"[hitl] Raw screenshot saved: {path}")
             return path
         except Exception as e:
             logger.warning(f"[hitl] Could not take screenshot: {e}")
             return None
+
+    def _annotate(
+        self,
+        raw_path: str,
+        request_id: str,
+        step_id: str,
+        reason: str,
+        current_url: str,
+    ) -> str:
+        """Annotate the raw screenshot and save as a separate annotated file."""
+        screenshot_dir = os.path.join(self.evidence_dir, "screenshots")
+        annotated_path = os.path.join(screenshot_dir, f"{request_id}_annotated.png")
+        return annotate_screenshot(
+            raw_path=raw_path,
+            step_id=step_id,
+            reason=reason,
+            current_url=current_url,
+            out_path=annotated_path,
+        )
 
     def escalate(
         self,
@@ -116,22 +276,35 @@ class HITLController:
         """
         Main escalation entry point.
 
-        Pauses automation, exposes the live browser to the human,
-        waits for them to signal completion, then verifies state and resumes.
+        Flow:
+          1. Take + annotate screenshot (human sees exactly what's wrong)
+          2. Save InterventionRequest JSON to disk
+          3. Print clear terminal notice with full context
+          4. If non_interactive (CI/test): auto-resolve immediately
+          5. If interactive (real HITL): block on input() while human acts
+             in the LIVE browser window, then resume
 
-        Returns a dict with:
-          - resolved: bool
-          - url_after: str
-          - human_notes: str
-          - duration_seconds: float
+        Returns dict: { resolved, url_after, human_notes, duration_seconds }
         """
         request_id = self._next_request_id()
         current_url = page.url
 
-        # Take screenshot of the current state
-        screenshot_path = self._take_screenshot(page, request_id)
+        # ── Step 1: Screenshot + annotation ───────────────────────────────
+        raw_path = self._take_screenshot(page, request_id)
+        annotated_path = None
+        if raw_path:
+            annotated_path = self._annotate(
+                raw_path=raw_path,
+                request_id=request_id,
+                step_id=current_step_id,
+                reason=reason,
+                current_url=current_url,
+            )
 
-        # Build the intervention request
+        # Use annotated path as the canonical screenshot reference
+        screenshot_path = annotated_path or raw_path
+
+        # ── Step 2: Build + persist intervention request ───────────────────
         request = InterventionRequest(
             request_id=request_id,
             capability_name=capability_name,
@@ -144,17 +317,16 @@ class HITLController:
             context=context or {},
             severity=severity,
         )
-
-        # Persist the intervention request
-        request_path = request.save(os.path.join(self.evidence_dir, "interventions"))
+        interventions_dir = os.path.join(self.evidence_dir, "interventions")
+        request_path = request.save(interventions_dir)
         logger.warning(f"[hitl] Intervention request saved: {request_path}")
 
+        # ── Step 3: Non-interactive mode (CI / automated tests) ────────────
         if non_interactive:
-            # In test/CI mode: auto-resolve without human input
             logger.info("[hitl] Non-interactive mode: auto-resolving intervention")
             request.status = "resolved"
             request.human_notes = "Auto-resolved in non-interactive mode"
-            request.save(os.path.join(self.evidence_dir, "interventions"))
+            request.save(interventions_dir)
             return {
                 "resolved": True,
                 "url_after": current_url,
@@ -162,39 +334,59 @@ class HITLController:
                 "duration_seconds": 0,
             }
 
-        # -----------------------------------------------------------------------
-        # Display intervention notice to the operator
-        # In production this would be: Slack message, email, ticket, REST webhook
-        # -----------------------------------------------------------------------
-        print("\n" + "="*70)
-        print("🛑  HUMAN INTERVENTION REQUIRED")
-        print("="*70)
-        print(f"  Request ID  : {request_id}")
-        print(f"  Capability  : {capability_name}")
-        print(f"  Goal        : {goal}")
-        print(f"  Current Step: {current_step_id} — {current_step_description}")
-        print(f"  Reason      : {reason}")
-        print(f"  Current URL : {current_url}")
+        # ── Step 4: Real interactive HITL ─────────────────────────────────
+        #
+        # At this point the browser window is open and VISIBLE (because the
+        # ReplayEngine / DiscoveryAgent launched with headless=False when
+        # hitl_enabled=True and a real operator is expected).
+        #
+        # We print a clear notice, then block on input().
+        # The human looks at the browser, fixes whatever is wrong
+        # (dismisses the dialog, approves the permission, handles the 2FA,
+        # navigates past the problem), then presses Enter here.
+        # Playwright's page object is still live — we just continue from
+        # wherever the human left it.
+
+        print("\n")
+        print("╔" + "═" * 68 + "╗")
+        print("║  🛑  HUMAN INTERVENTION REQUIRED" + " " * 35 + "║")
+        print("╠" + "═" * 68 + "╣")
+        print(f"║  Request ID  : {request_id:<52}║")
+        print(f"║  Capability  : {capability_name:<52}║")
+        print(f"║  Stuck step  : {current_step_id:<52}║")
+        print(f"║  Severity    : {severity.upper():<52}║")
+        print("╠" + "═" * 68 + "╣")
+        # Word-wrap the reason to fit the box
+        reason_lines = textwrap.wrap(f"Reason: {reason}", width=66)
+        for line in reason_lines[:4]:            # max 4 lines
+            print(f"║  {line:<66}║")
+        print("╠" + "═" * 68 + "╣")
+        print(f"║  URL         : {current_url[:52]:<52}║")
         if screenshot_path:
-            print(f"  Screenshot  : {screenshot_path}")
-        print(f"  Severity    : {severity.upper()}")
+            short = os.path.basename(screenshot_path)
+            print(f"║  Screenshot  : {short:<52}║")
+        print("╠" + "═" * 68 + "╣")
+        print("║                                                                    ║")
+        print("║  The browser window is OPEN and showing the stuck state.           ║")
+        print("║  Please:                                                           ║")
+        print("║    1. Look at the browser — the annotated screenshot shows what    ║")
+        print("║       went wrong and at which step.                                ║")
+        print("║    2. Fix the issue manually in the browser (dismiss the dialog,   ║")
+        print("║       approve the permission, handle 2FA, etc.)                    ║")
+        print("║    3. Leave the browser on a page the automation can continue from.║")
+        print("║    4. Come back here and press ENTER to hand control back.         ║")
+        print("║                                                                    ║")
+        print("╚" + "═" * 68 + "╝")
         print()
-        print("  The browser window is OPEN. Please:")
-        print("  1. Look at the browser window")
-        print("  2. Perform the required manual action")
-        print("  3. Leave the browser on the correct page when done")
-        print("  4. Return here and press ENTER to hand control back")
-        print()
-        print("  (Type any notes before pressing ENTER, or just press ENTER)")
-        print("="*70 + "\n")
 
         start_time = time.time()
         request.status = "in_progress"
+        request.save(interventions_dir)
 
         try:
-            human_notes = input("  Your notes (optional): ").strip()
+            human_notes = input("  Your notes (optional, then press ENTER): ").strip()
         except (KeyboardInterrupt, EOFError):
-            human_notes = ""
+            human_notes = "interrupted"
 
         duration = time.time() - start_time
         url_after = page.url
@@ -202,9 +394,12 @@ class HITLController:
         # Update and persist resolved request
         request.status = "resolved"
         request.human_notes = human_notes
-        request.save(os.path.join(self.evidence_dir, "interventions"))
+        request.save(interventions_dir)
 
-        print(f"\n✅  Control returned to automation. Verifying state...")
+        print(f"\n  ✅  Control returned to automation.")
+        print(f"  ⏱  Human held control for {duration:.1f}s")
+        print(f"  📍  Resuming from: {url_after}\n")
+
         logger.info(
             f"[hitl] Intervention {request_id} resolved in {duration:.1f}s. "
             f"URL after: {url_after}. Notes: {human_notes!r}"
@@ -224,14 +419,13 @@ class HITLController:
         max_failures_before_escalation: int = 3,
     ) -> bool:
         """
-        Heuristic to decide if the system is stuck and needs human help.
-        In production this would be more sophisticated (loop detection,
-        state comparison, etc.).
+        Heuristic: if the engine has failed the same step N times in a row,
+        it's stuck. Escalate to human.
         """
         if consecutive_failures >= max_failures_before_escalation:
             logger.warning(
-                f"[hitl] Stuck detected after {consecutive_failures} consecutive failures. "
-                f"Last error: {last_error}"
+                f"[hitl] Stuck detected after {consecutive_failures} consecutive "
+                f"failures. Last error: {last_error}"
             )
             return True
         return False

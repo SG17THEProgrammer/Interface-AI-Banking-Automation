@@ -6,890 +6,715 @@
 <title>Automation Run Dashboard</title>
 <style>
   :root {
-    --bg: #0f1117;
-    --surface: #171b26;
-    --surface2: #1e2333;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #e8eaf0;
-    --muted: #6b7280;
-    --accent: #6366f1;
-    --accent2: #818cf8;
-    --success: #22c55e;
-    --warn: #f59e0b;
-    --danger: #ef4444;
-    --info: #38bdf8;
-    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    --sans: 'Inter', system-ui, sans-serif;
+    --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--surface3:#21262d;
+    --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);
+    --text:#e6edf3;--muted:#7d8590;--accent:#6366f1;--accent2:#818cf8;
+    --success:#3fb950;--warn:#d29922;--danger:#f85149;--info:#58a6ff;--hitl:#bc8cff;
+    --mono:'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+    --sans:'Inter',system-ui,sans-serif;
   }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6;min-height:100vh}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* HEADER */
+  .hdr{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:100;gap:12px}
+  .hdr-left{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+  .hdr h1{font-size:13px;font-weight:600;white-space:nowrap}
+  .hdr-sub{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:500px}
+  .hdr-right{display:flex;gap:6px;flex-shrink:0}
+  .btn{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px;font-family:var(--sans);transition:all .15s;white-space:nowrap}
+  .btn:hover{border-color:var(--accent);background:var(--surface3)}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
+  /* LAYOUT */
+  .main{padding:20px 24px;max-width:1400px;margin:0 auto}
 
-  /* ── Header ── */
-  .header {
-    border-bottom: 1px solid var(--border);
-    padding: 18px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    background: var(--bg);
-    z-index: 10;
-  }
-  .header-left { display: flex; align-items: center; gap: 12px; }
-  .logo {
-    width: 28px; height: 28px;
-    background: var(--accent);
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; color: #fff;
-  }
-  .header h1 { font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
-  .header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  /* ONBOARDING */
+  .how-to{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:14px}
+  .how-to-title{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);margin-bottom:10px}
+  .how-to-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+  .how-step{display:flex;gap:8px;align-items:flex-start}
+  .snum{width:20px;height:20px;border-radius:50%;background:rgba(99,102,241,.2);color:var(--accent2);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+  .stext{font-size:11px;color:var(--muted);line-height:1.5}
+  .stext b{color:var(--text)}
+  .stext code{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--surface2);padding:1px 4px;border-radius:3px}
 
-  .load-btn {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    padding: 7px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    font-family: var(--sans);
-    transition: border-color 0.15s;
-  }
-  .load-btn:hover { border-color: var(--accent); }
-  .load-btn svg { opacity: 0.6; }
+  /* DROP ZONE — supports both logs and images */
+  #drop-zone{border:1.5px dashed var(--border2);border-radius:8px;padding:40px 24px;text-align:center;transition:all .2s;cursor:pointer;margin-bottom:0}
+  #drop-zone.drag-over{border-color:var(--accent);background:rgba(99,102,241,.04)}
+  #drop-zone.hidden{display:none}
+  .drop-icon{font-size:24px;margin-bottom:8px;opacity:.35}
+  .drop-title{font-size:13px;font-weight:500;margin-bottom:6px}
+  .drop-sub{color:var(--muted);font-size:11px;line-height:2}
+  .file-chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:6px}
+  .chip{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:2px 8px;font-size:10px;font-family:var(--mono);color:var(--muted)}
+  .chip.img{color:var(--info);border-color:rgba(88,166,255,.2);background:rgba(88,166,255,.06)}
 
-  /* ── Layout ── */
-  .main { padding: 24px 28px; max-width: 1300px; margin: 0 auto; }
+  /* DASHBOARD */
+  #dashboard{display:none}
+  #dashboard.visible{display:block}
 
-  /* ── Drop zone ── */
-  #drop-zone {
-    border: 1.5px dashed var(--border2);
-    border-radius: 10px;
-    padding: 56px 32px;
-    text-align: center;
-    transition: border-color 0.2s, background 0.2s;
-    cursor: pointer;
-    margin-bottom: 28px;
-  }
-  #drop-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(99,102,241,0.05);
-  }
-  #drop-zone.hidden { display: none; }
-  .drop-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
-  .drop-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
-  .drop-sub { color: var(--muted); font-size: 12px; line-height: 1.8; }
-  .drop-sub code {
-    font-family: var(--mono);
-    background: var(--surface2);
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-size: 11px;
-  }
+  /* SECTION */
+  .sec{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;margin-top:24px;display:flex;align-items:center;gap:8px}
+  .sec:first-child{margin-top:0}
+  .sec-line{flex:1;height:1px;background:var(--border)}
 
-  /* ── Dashboard grid ── */
-  #dashboard { display: none; }
-  #dashboard.visible { display: block; }
+  /* STATS */
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:12px 14px}
+  .stat-label{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:500}
+  .stat-val{font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+  .stat-val.c-s{color:var(--success)}.stat-val.c-w{color:var(--warn)}.stat-val.c-d{color:var(--danger)}.stat-val.c-i{color:var(--info)}.stat-val.c-h{color:var(--hitl)}
+  .stat-sub{font-size:10px;color:var(--muted);margin-top:4px}
 
-  .section-title {
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    margin-top: 28px;
-  }
-  .section-title:first-child { margin-top: 0; }
+  /* TABS */
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{padding:4px 12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-size:11px;font-family:var(--sans);transition:all .15s;display:flex;align-items:center;gap:5px}
+  .tab:hover{border-color:var(--border2);color:var(--text)}
+  .tab.active{border-color:var(--accent);color:var(--accent2);background:rgba(99,102,241,.1)}
+  .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .dot.s{background:var(--success)}.dot.w{background:var(--warn)}.dot.d{background:var(--danger)}.dot.i{background:var(--info)}.dot.h{background:var(--hitl)}.dot.m{background:var(--muted)}
 
-  /* ── Stat cards ── */
-  .stat-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
-    margin-bottom: 4px;
-  }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px 18px;
-  }
-  .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
-  .stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-  .stat-value.success { color: var(--success); }
-  .stat-value.warn { color: var(--warn); }
-  .stat-value.danger { color: var(--danger); }
-  .stat-value.info { color: var(--info); }
-  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  /* TIMELINE */
+  .timeline{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:12px}
+  .tl-hdr{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+  .tl-row{display:grid;grid-template-columns:38px 76px 1fr 58px 68px 190px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--border);gap:8px;transition:background .1s}
+  .tl-row:last-child{border-bottom:none}
+  .tl-row:hover{background:var(--surface2)}
+  .tl-step{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .tl-bar-wrap{height:5px;background:rgba(255,255,255,.04);border-radius:3px}
+  .tl-bar{height:100%;border-radius:3px;min-width:3px}
+  .tl-dur{font-size:10px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .tl-desc{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  /* ── Run tabs ── */
-  .run-tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-  .run-tab {
-    padding: 6px 14px;
-    border-radius: 5px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 11px;
-    font-family: var(--sans);
-    transition: all 0.15s;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .run-tab:hover { border-color: var(--border2); color: var(--text); }
-  .run-tab.active { border-color: var(--accent); color: var(--accent2); background: rgba(99,102,241,0.08); }
-  .run-tab .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .dot.success { background: var(--success); }
-  .dot.warn    { background: var(--warn); }
-  .dot.danger  { background: var(--danger); }
-  .dot.info    { background: var(--info); }
+  /* TAGS / BADGES */
+  .tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:500;white-space:nowrap}
+  .tag.s{background:rgba(63,185,80,.12);color:#3fb950}.tag.w{background:rgba(210,153,34,.12);color:#d29922}
+  .tag.d{background:rgba(248,81,73,.12);color:#f85149}.tag.i{background:rgba(88,166,255,.12);color:#58a6ff}
+  .tag.h{background:rgba(188,140,255,.12);color:#bc8cff}.tag.m{background:rgba(255,255,255,.06);color:var(--muted)}
+  .ab{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;font-family:var(--mono)}
+  .ab-navigate{background:rgba(99,102,241,.15);color:#818cf8}.ab-type{background:rgba(88,166,255,.15);color:#58a6ff}
+  .ab-click{background:rgba(63,185,80,.15);color:#3fb950}.ab-extract{background:rgba(210,153,34,.15);color:#d29922}
+  .ab-assert{background:rgba(188,140,255,.15);color:#bc8cff}.ab-other{background:rgba(255,255,255,.06);color:var(--muted)}
 
-  /* ── Timeline ── */
-  .timeline {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 16px;
-  }
-  .timeline-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .timeline-row {
-    display: flex;
-    align-items: center;
-    padding: 9px 16px;
-    border-bottom: 1px solid var(--border);
-    gap: 12px;
-    transition: background 0.1s;
-  }
-  .timeline-row:last-child { border-bottom: none; }
-  .timeline-row:hover { background: var(--surface2); }
-  .tl-step {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-    width: 28px;
-    flex-shrink: 0;
-  }
-  .tl-action {
-    width: 70px;
-    flex-shrink: 0;
-    font-size: 11px;
-  }
-  .tl-bar-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; }
-  .tl-bar { height: 100%; border-radius: 3px; min-width: 2px; }
-  .tl-dur { font-size: 11px; color: var(--muted); width: 52px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
-  .tl-outcome { width: 80px; flex-shrink: 0; }
-  .tl-desc { flex: 1; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* CHARTS */
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  @media(max-width:680px){.charts-row{grid-template-columns:1fr}}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px}
+  .chart-title{font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em;margin-bottom:12px;text-transform:uppercase}
+  .chart-wrap{position:relative;width:100%;height:170px}
 
-  .tag {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-  }
-  .tag.success { background: rgba(34,197,94,0.12); color: #4ade80; }
-  .tag.warn    { background: rgba(245,158,11,0.12); color: #fbbf24; }
-  .tag.danger  { background: rgba(239,68,68,0.12);  color: #f87171; }
-  .tag.info    { background: rgba(56,189,248,0.12);  color: #38bdf8; }
-  .tag.muted   { background: rgba(255,255,255,0.05); color: var(--muted); }
+  /* SCREENSHOTS GALLERY */
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-bottom:12px}
+  .gallery-item{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .gallery-item.hitl-img{border-color:rgba(188,140,255,.3);background:rgba(188,140,255,.03)}
+  .gallery-item.failure-img{border-color:rgba(248,81,73,.3);background:rgba(248,81,73,.03)}
+  .gallery-item.success-img{border-color:rgba(63,185,80,.2)}
+  .img-header{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .img-name{font-size:11px;font-weight:500;font-family:var(--mono);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .img-meta{font-size:10px;color:var(--muted)}
+  .img-wrap{position:relative;cursor:pointer}
+  .img-wrap img{width:100%;height:200px;object-fit:cover;object-position:top;display:block;transition:height .2s}
+  .img-wrap img.expanded-img{height:auto;max-height:600px;object-fit:contain;object-position:center;background:#000}
+  .img-expand-hint{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;padding:2px 7px;border-radius:3px;pointer-events:none}
+  .img-caption{padding:8px 12px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);line-height:1.5}
+  .img-caption b{color:var(--text)}
 
-  .action-badge {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-family: var(--mono);
-  }
-  .ab-navigate { background: rgba(99,102,241,0.12); color: #818cf8; }
-  .ab-type     { background: rgba(56,189,248,0.12);  color: #38bdf8; }
-  .ab-click    { background: rgba(34,197,94,0.12);   color: #4ade80; }
-  .ab-extract  { background: rgba(245,158,11,0.12);  color: #fbbf24; }
-  .ab-assert   { background: rgba(168,85,247,0.12);  color: #c084fc; }
-  .ab-other    { background: rgba(255,255,255,0.06); color: var(--muted); }
+  /* EVENT LOG */
+  .log-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .log-toolbar{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .log-label{font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;margin-right:3px}
+  .filt{padding:2px 9px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;font-family:var(--sans);transition:all .12s}
+  .filt.on{border-color:var(--accent);color:var(--accent2);background:rgba(99,102,241,.1)}
+  .log-scroll{max-height:440px;overflow-y:auto}
+  .log-row{display:grid;grid-template-columns:88px 185px 1fr auto;align-items:start;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;transition:background .1s;cursor:pointer}
+  .log-row:last-child{border-bottom:none}
+  .log-row:hover{background:var(--surface2)}
+  .log-ts{color:var(--muted);white-space:nowrap}
+  .log-event{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .log-row.ev-error .log-event{color:var(--danger)}.log-row.ev-warn .log-event{color:var(--warn)}
+  .log-row.ev-hitl .log-event{color:var(--hitl)}.log-row.ev-done .log-event{color:var(--success)}
+  .log-row.ev-default .log-event{color:var(--accent2)}
+  /* Full data, collapsed to 1 line, click to expand — NO truncation of the string itself */
+  .log-data{color:var(--text);opacity:.6;word-break:break-all;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .log-row.expanded .log-data{-webkit-line-clamp:unset;overflow:visible;white-space:pre-wrap;opacity:.85}
+  .log-expand{color:var(--muted);font-size:10px;cursor:pointer;flex-shrink:0;padding:1px 5px;border-radius:3px;border:1px solid var(--border);font-family:var(--sans);background:transparent;transition:all .12s;white-space:nowrap;align-self:flex-start}
+  .log-expand:hover{border-color:var(--accent2);color:var(--accent2)}
 
-  /* ── Chart containers ── */
-  .charts-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  @media (max-width: 700px) { .charts-row { grid-template-columns: 1fr; } }
+  /* OUTPUTS */
+  .outputs-panel{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px;margin-bottom:12px}
+  .outputs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+  .out-item{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:9px 12px}
+  .out-key{font-size:9px;color:var(--muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+  .out-val{font-family:var(--mono);font-size:13px;color:var(--success);font-weight:700}
+  .out-val.nv{color:var(--danger);font-size:11px;font-style:italic;font-weight:400}
 
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-  }
-  .chart-card-title {
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 14px;
-    font-weight: 500;
-  }
-  .chart-wrap { position: relative; width: 100%; height: 180px; }
+  /* HITL CARDS */
+  .hitl-card{background:rgba(188,140,255,.05);border:1px solid rgba(188,140,255,.2);border-radius:7px;padding:14px 16px;margin-bottom:8px}
+  .hitl-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .hitl-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(188,140,255,.12);color:var(--hitl);padding:2px 9px;border-radius:4px;font-size:11px;font-weight:500}
+  .hitl-grid{display:grid;grid-template-columns:140px 1fr;gap:5px 14px;font-size:11px}
+  .hk{color:var(--muted)}.hv{font-family:var(--mono);font-size:10px;word-break:break-all}
+  .hitl-reason{grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-family:var(--mono);font-size:10px;white-space:pre-wrap;word-break:break-word;color:var(--warn);margin-top:3px}
 
-  /* ── Event log ── */
-  .log-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .log-filter-bar {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .log-filter {
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    font-size: 11px;
-    cursor: pointer;
-    font-family: var(--sans);
-    transition: all 0.12s;
-  }
-  .log-filter.on { border-color: var(--accent); color: var(--accent2); background: rgba(99,102,241,0.08); }
-  .log-scroll { max-height: 320px; overflow-y: auto; }
-  .log-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 7px 14px;
-    border-bottom: 1px solid var(--border);
-    font-family: var(--mono);
-    font-size: 11px;
-    transition: background 0.1s;
-  }
-  .log-row:last-child { border-bottom: none; }
-  .log-row:hover { background: var(--surface2); }
-  .log-ts { color: var(--muted); white-space: nowrap; flex-shrink: 0; }
-  .log-event { color: var(--accent2); white-space: nowrap; flex-shrink: 0; min-width: 180px; }
-  .log-data { color: var(--text); opacity: 0.6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .log-row.ev-error .log-event { color: var(--danger); }
-  .log-row.ev-warn  .log-event { color: var(--warn); }
-  .log-row.ev-hitl  .log-event { color: #c084fc; }
-  .log-row.ev-done  .log-event { color: var(--success); }
+  /* EMPTY STATE */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:7px;text-align:center}
+  .empty-icon{font-size:22px;opacity:.2}
+  .empty-title{font-size:12px;font-weight:500;color:var(--muted)}
+  .empty-sub{font-size:11px;color:var(--muted);opacity:.7;max-width:300px;line-height:1.6}
 
-  /* ── HITL card ── */
-  .hitl-card {
-    background: rgba(192,132,252,0.05);
-    border: 1px solid rgba(192,132,252,0.2);
-    border-radius: 8px;
-    padding: 16px 18px;
-    margin-bottom: 12px;
-  }
-  .hitl-header {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 10px;
-  }
-  .hitl-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: rgba(192,132,252,0.12);
-    color: #c084fc;
-    padding: 3px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-  }
-  .hitl-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px 20px;
-    font-size: 11px;
-  }
-  .hitl-key { color: var(--muted); }
-  .hitl-val { font-family: var(--mono); font-size: 10px; }
+  /* LIGHTBOX */
+  #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+  #lightbox.open{display:flex}
+  #lightbox img{max-width:90vw;max-height:82vh;object-fit:contain;border-radius:4px;box-shadow:0 0 40px rgba(0,0,0,.8)}
+  #lightbox-caption{color:rgba(255,255,255,.7);font-size:12px;font-family:var(--mono);text-align:center;max-width:80vw}
+  #lightbox-close{position:absolute;top:16px;right:20px;color:rgba(255,255,255,.5);font-size:24px;cursor:pointer;line-height:1;background:none;border:none}
+  #lightbox-close:hover{color:#fff}
 
-  /* ── Empty state ── */
-  .empty { text-align: center; padding: 32px; color: var(--muted); font-size: 12px; }
-
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-  /* ── Legend ── */
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
-  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header-left">
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLB()">
+  <button id="lightbox-close" onclick="closeLB()">✕</button>
+  <img id="lb-img" src="" alt="">
+  <div id="lightbox-caption"></div>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-left">
     <div class="logo">A</div>
     <div>
-      <h1>Automation Run Dashboard</h1>
-      <div class="header-sub" id="header-sub">Computer-Use Automation System · evidence/ viewer</div>
+      <div style="font-size:13px;font-weight:600">Automation Run Dashboard</div>
+      <div class="hdr-sub" id="hdr-sub">Drop your evidence/ files to begin</div>
     </div>
   </div>
-  <button class="load-btn" onclick="document.getElementById('file-input').click()">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-      <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4-4 4M12 6v10"/>
-    </svg>
-    Load log files
-  </button>
-  <input type="file" id="file-input" multiple accept=".log,.json" style="display:none" onchange="handleFileInput(this.files)">
+  <div class="hdr-right">
+    <button class="btn" onclick="document.getElementById('fi').click()">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4-4 4M12 6v10"/></svg>
+      Load files
+    </button>
+    <button class="btn" id="reset-btn" onclick="resetDash()" style="display:none">Reset</button>
+  </div>
+  <input type="file" id="fi" multiple accept=".log,.json,.png,.jpg,.jpeg" style="display:none" onchange="handleFiles(this.files)">
 </header>
 
 <main class="main">
-
-  <!-- Drop zone -->
-  <div id="drop-zone" onclick="document.getElementById('file-input').click()">
-    <div class="drop-icon">⌗</div>
-    <div class="drop-title">Drop your evidence/ log files here</div>
-    <div class="drop-sub">
-      Accepts any combination of:<br>
-      <code>discovery_run.log</code> &nbsp; <code>replay_success.log</code> &nbsp;
-      <code>replay_business_outcome.log</code> &nbsp; <code>replay_hitl_test.log</code><br>
-      <code>replay_*.log</code> &nbsp; <code>*_summary.json</code> &nbsp;
-      <code>interventions/*.json</code><br><br>
-      Or click to browse. Multiple files OK.
+  <!-- ONBOARDING -->
+  <div id="onboarding">
+    <div class="how-to">
+      <div class="how-to-title">How to use this dashboard</div>
+      <div class="how-to-steps">
+        <div class="how-step"><div class="snum">1</div>
+          <div class="stext"><b>Run the automation</b><br><code>python main.py --mode all</code><br>then<br><code>python hitl_test.py</code></div></div>
+        <div class="how-step"><div class="snum">2</div>
+          <div class="stext"><b>Drop all evidence files</b><br>Logs (.log, .json), screenshots (.png) — all at once from your <code>evidence/</code> folder</div></div>
+        <div class="how-step"><div class="snum">3</div>
+          <div class="stext"><b>Switch runs via tabs</b><br>Discovery, replay success, business outcome, HITL — each gets its own tab with timeline + charts</div></div>
+        <div class="how-step"><div class="snum">4</div>
+          <div class="stext"><b>Click to expand logs</b><br>Every event row shows full untruncated data when clicked. Filter by type using the toolbar buttons</div></div>
+        <div class="how-step"><div class="snum">5</div>
+          <div class="stext"><b>View screenshots</b><br>Drop .png files too — they appear in the Screenshots section with labels, click any to open full-size</div></div>
+      </div>
+    </div>
+    <div id="drop-zone" onclick="document.getElementById('fi').click()">
+      <div class="drop-icon">⌗</div>
+      <div class="drop-title">Drop your evidence/ files here</div>
+      <div class="drop-sub">
+        Logs, summaries, intervention JSONs, and screenshots — all in one go
+        <div class="file-chips">
+          <span class="chip">discovery_run.log</span>
+          <span class="chip">replay_*.log</span>
+          <span class="chip">*_summary.json</span>
+          <span class="chip">interventions/*.json</span>
+          <span class="chip img">screenshots/*.png</span>
+          <span class="chip img">screenshots/*.jpg</span>
+        </div>
+        <br>No data leaves your browser · Multiple files OK · Click or drag
+      </div>
     </div>
   </div>
 
-  <!-- Dashboard (shown after load) -->
+  <!-- DASHBOARD -->
   <div id="dashboard">
-
-    <!-- Overview stats -->
-    <div class="section-title">Overview</div>
+    <div class="sec">Overview <span class="sec-line"></span></div>
     <div class="stat-row" id="stat-row"></div>
 
-    <!-- Per-run tabs -->
-    <div class="section-title" style="margin-top:24px">Runs loaded</div>
-    <div class="run-tabs" id="run-tabs"></div>
-
-    <!-- Per-run detail -->
+    <div class="sec" style="margin-top:20px">Runs <span class="sec-line"></span></div>
+    <div class="tabs" id="tabs"></div>
     <div id="run-detail"></div>
 
-    <!-- HITL interventions -->
-    <div id="hitl-section" style="display:none">
-      <div class="section-title">HITL interventions</div>
-      <div id="hitl-cards"></div>
+    <!-- SCREENSHOTS GALLERY — always visible when images loaded -->
+    <div id="gallery-sec" style="display:none">
+      <div class="sec">Screenshots <span class="sec-line"></span>
+        <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">Click any image to open full-size</span>
+      </div>
+      <div class="gallery" id="gallery"></div>
     </div>
 
+    <!-- HITL INTERVENTIONS -->
+    <div id="hitl-sec" style="display:none">
+      <div class="sec">HITL Interventions <span class="sec-line"></span></div>
+      <div id="hitl-cards"></div>
+    </div>
   </div>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-/* ── State ── */
-const state = {
-  runs: [],          // [{name, events, type}]
-  interventions: [], // parsed intervention JSON objects
-  activeRun: 0,
-  charts: {},
-};
+/* ═══════════════════════════════════════════ STATE ══════════════════════════════════════════ */
+const S = { runs:[], interventions:[], images:[], active:0 };
 
-/* ── File loading ── */
-const dropZone = document.getElementById('drop-zone');
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  handleFileInput(e.dataTransfer.files);
-});
+/* ══════════════════════════════════════════ FILES ═══════════════════════════════════════════ */
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop',      e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
 
-function handleFileInput(files) {
-  const promises = Array.from(files).map(f => readFile(f));
-  Promise.all(promises).then(() => render());
+function handleFiles(files) {
+  Promise.all(Array.from(files).map(readFile)).then(render);
 }
 
-function readFile(file) {
-  return new Promise(resolve => {
+function readFile(f) {
+  return new Promise(res => {
+    const name = f.name.toLowerCase();
+    // Images
+    if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg')) {
+      const r = new FileReader();
+      r.onload = e => { S.images.push({ name: f.name, src: e.target.result, size: f.size }); res(); };
+      r.readAsDataURL(f);
+      return;
+    }
+    // Text files
     const r = new FileReader();
     r.onload = e => {
       const text = e.target.result;
-      const name = file.name;
-
-      if (name.endsWith('.log')) {
-        const events = parseNDJSON(text);
-        if (events.length > 0) {
-          const type = inferRunType(name, events);
-          state.runs.push({ name, events, type });
-        }
-      } else if (name.endsWith('.json')) {
+      if (f.name.endsWith('.log')) {
+        const evs = ndJSON(text);
+        if (evs.length) S.runs.push({ name: f.name, events: evs, type: inferType(f.name, evs) });
+      } else if (f.name.endsWith('.json')) {
         try {
           const obj = JSON.parse(text);
-          // Intervention file
           if (obj.request_id && obj.reason) {
-            state.interventions.push(obj);
+            S.interventions.push(obj);
+          } else if (obj.outcome_type) {
+            const evs = obj.log_entries?.length ? obj.log_entries : synthEvs(obj);
+            S.runs.push({ name: f.name, events: evs, type: obj.outcome_type, summary: obj });
           }
-          // Summary JSON — convert to pseudo-events for display
-          else if (obj.outcome_type) {
-            const events = summaryToEvents(obj, name);
-            state.runs.push({ name, events, type: obj.outcome_type, summary: obj });
-          }
-        } catch(e) {}
+        } catch(_) {}
       }
-      resolve();
+      res();
     };
-    r.readAsText(file);
+    r.readAsText(f);
   });
 }
 
-function parseNDJSON(text) {
-  return text.trim().split('\n').flatMap(line => {
-    try { return [JSON.parse(line)]; } catch(e) { return []; }
-  });
-}
+function ndJSON(t) { return t.trim().split('\n').flatMap(l => { try { return [JSON.parse(l)]; } catch(_) { return []; } }); }
 
-function inferRunType(name, events) {
+function inferType(name, evs) {
   if (name.includes('discovery')) return 'discovery';
-  const last = events.find(e => e.event === 'replay_complete');
-  if (last) return 'success';
-  const bo = events.find(e => e.event === 'business_outcome_detected');
-  if (bo) return 'business_outcome';
-  const hitl = events.find(e => e.event === 'hitl_resolved' || e.event === 'hitl_escalation');
-  if (hitl) return 'hitl';
-  return 'failure';
+  if (evs.find(e => e.event === 'replay_complete')) return 'success';
+  if (evs.find(e => e.event === 'business_outcome_detected')) return 'business_outcome';
+  if (evs.find(e => e.event === 'hitl_resolved' || e.event === 'hitl_escalation')) return 'hitl';
+  if (evs.find(e => e.event === 'replay_error' || e.event === 'step_failed')) return 'failure';
+  return 'unknown';
 }
 
-function summaryToEvents(obj, name) {
-  const events = [];
-  if (obj.log_entries && obj.log_entries.length > 0) return obj.log_entries;
-  // Minimal synthetic events
-  events.push({ event: 'replay_start', capability: obj.outputs ? 'replay' : 'run', ts: new Date().toISOString() });
-  if (obj.success) events.push({ event: 'replay_complete', outputs: obj.outputs, steps: obj.steps_completed, ts: new Date().toISOString() });
-  else if (obj.business_outcome) events.push({ event: 'business_outcome_detected', outcome: obj.business_outcome, ts: new Date().toISOString() });
-  else events.push({ event: 'replay_error', error: obj.error, ts: new Date().toISOString() });
-  return events;
+function synthEvs(obj) {
+  const t = new Date().toISOString();
+  const evs = [{ event: 'replay_start', ts: t }];
+  if (obj.success) evs.push({ event: 'replay_complete', outputs: obj.outputs, ts: t });
+  else if (obj.business_outcome) evs.push({ event: 'business_outcome_detected', outcome: obj.business_outcome, ts: t });
+  else evs.push({ event: 'replay_error', error: obj.error, ts: t });
+  return evs;
 }
 
-/* ── Render ── */
+/* ═══════════════════════════════════════════ RENDER ══════════════════════════════════════════ */
 function render() {
-  if (state.runs.length === 0 && state.interventions.length === 0) return;
-
-  dropZone.classList.add('hidden');
+  if (!S.runs.length && !S.interventions.length && !S.images.length) return;
+  document.getElementById('onboarding').style.display = 'none';
   document.getElementById('dashboard').classList.add('visible');
+  document.getElementById('reset-btn').style.display = 'flex';
+
+  const parts = [];
+  if (S.runs.length) parts.push(`${S.runs.length} run${S.runs.length !== 1 ? 's' : ''}`);
+  if (S.images.length) parts.push(`${S.images.length} screenshot${S.images.length !== 1 ? 's' : ''}`);
+  if (S.interventions.length) parts.push(`${S.interventions.length} HITL intervention${S.interventions.length !== 1 ? 's' : ''}`);
+  document.getElementById('hdr-sub').textContent = parts.join(' · ');
 
   renderStats();
   renderTabs();
-  renderRunDetail(state.activeRun);
+  renderDetail(S.active);
+  renderGallery();
   renderHITL();
-  updateHeader();
 }
 
-function updateHeader() {
-  const total = state.runs.length;
-  const files = state.runs.map(r => r.name).join(', ');
-  document.getElementById('header-sub').textContent =
-    `${total} run${total !== 1 ? 's' : ''} loaded · ${files}`;
+function resetDash() {
+  S.runs = []; S.interventions = []; S.images = []; S.active = 0;
+  document.getElementById('onboarding').style.display = 'block';
+  document.getElementById('dashboard').classList.remove('visible');
+  document.getElementById('reset-btn').style.display = 'none';
+  document.getElementById('hdr-sub').textContent = 'Drop your evidence/ files to begin';
+  document.getElementById('fi').value = '';
 }
 
+/* ═══════════════════════════════════════════ STATS ══════════════════════════════════════════ */
 function renderStats() {
-  const allEvents = state.runs.flatMap(r => r.events);
-
-  const successRuns = state.runs.filter(r => r.type === 'success').length;
-  const boRuns      = state.runs.filter(r => r.type === 'business_outcome').length;
-  const failRuns    = state.runs.filter(r => r.type === 'failure').length;
-  const hitlRuns    = state.runs.filter(r => r.type === 'hitl').length;
-  const discRuns    = state.runs.filter(r => r.type === 'discovery').length;
-
-  // Total duration across replay runs
-  const totalDur = state.runs.reduce((acc, run) => {
-    const start = run.events.find(e => e.ts || e.timestamp);
-    const end   = [...run.events].reverse().find(e => e.ts || e.timestamp);
-    if (start && end) {
-      const s = new Date(start.ts || start.timestamp);
-      const en = new Date(end.ts || end.timestamp);
-      return acc + (en - s) / 1000;
-    }
-    return acc;
+  const all = S.runs.flatMap(r => r.events);
+  const byT = t => S.runs.filter(r => r.type === t).length;
+  const dur = S.runs.reduce((a, run) => {
+    const evs = run.events.filter(e => e.ts || e.timestamp);
+    if (evs.length < 2) return a;
+    return a + (new Date(evs.at(-1).ts || evs.at(-1).timestamp) - new Date(evs[0].ts || evs[0].timestamp)) / 1000;
   }, 0);
+  const steps = all.filter(e => e.event === 'step_done').length;
+  const retries = all.filter(e => e.event === 'step_retry').length;
+  const hitlN = all.filter(e => e.event === 'hitl_resolved' || e.event === 'hitl_escalation').length + S.interventions.length;
+  const pct = S.runs.length ? Math.round(byT('success') / S.runs.length * 100) : 0;
 
-  const totalSteps = allEvents.filter(e => e.event === 'step_done').length;
-  const retries    = allEvents.filter(e => e.event === 'step_retry').length;
-  const hitlEvents = allEvents.filter(e => e.event === 'hitl_resolved' || e.event === 'hitl_escalation').length + state.interventions.length;
-
-  const statEl = document.getElementById('stat-row');
-  statEl.innerHTML = `
-    ${statCard('Total runs', state.runs.length, '', 'info')}
-    ${statCard('Successful', successRuns, `${state.runs.length ? Math.round(successRuns/state.runs.length*100) : 0}% success rate`, 'success')}
-    ${statCard('Business outcomes', boRuns, 'valid non-crash results', 'warn')}
-    ${statCard('Hard failures', failRuns, 'steps that crashed', 'danger')}
-    ${statCard('HITL escalations', hitlEvents, 'human interventions', hitlEvents > 0 ? 'warn' : '')}
-    ${statCard('Steps executed', totalSteps, `${retries} retr${retries === 1 ? 'y' : 'ies'}`, 'info')}
-    ${statCard('Total duration', totalDur.toFixed(1) + 's', `across all runs`, '')}
-    ${discRuns > 0 ? statCard('Discovery runs', discRuns, 'LLM-driven', 'info') : ''}
-  `;
+  document.getElementById('stat-row').innerHTML = [
+    sc('Total runs',        S.runs.length,   '',                      ''),
+    sc('Successful',        byT('success'),  pct + '% success rate',  'c-s'),
+    sc('Business outcomes', byT('business_outcome'), 'valid non-crash', 'c-w'),
+    sc('Hard failures',     byT('failure') + byT('unknown'), 'errors', 'c-d'),
+    sc('HITL escalations',  hitlN,           'human interventions',   hitlN ? 'c-h' : ''),
+    sc('Steps executed',    steps,           retries + ' retries',    'c-i'),
+    sc('Duration',          dur.toFixed(1) + 's', 'total across runs',''),
+    sc('Screenshots',       S.images.length, 'loaded',                S.images.length ? 'c-i' : ''),
+  ].join('');
 }
 
-function statCard(label, value, sub, cls) {
-  return `<div class="stat-card">
-    <div class="stat-label">${label}</div>
-    <div class="stat-value ${cls}">${value}</div>
-    ${sub ? `<div class="stat-sub">${sub}</div>` : ''}
-  </div>`;
+function sc(label, val, sub, cls) {
+  return `<div class="stat"><div class="stat-label">${label}</div><div class="stat-val ${cls}">${val}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
 }
 
+/* ═══════════════════════════════════════════ TABS ═══════════════════════════════════════════ */
 function renderTabs() {
-  const tabs = document.getElementById('run-tabs');
-  const dotClass = r =>
-    r.type === 'success' ? 'success' :
-    r.type === 'business_outcome' ? 'warn' :
-    r.type === 'hitl' ? 'warn' :
-    r.type === 'discovery' ? 'info' : 'danger';
-
-  tabs.innerHTML = state.runs.map((run, i) => `
-    <button class="run-tab ${i === state.activeRun ? 'active' : ''}" onclick="setActiveRun(${i})">
-      <span class="dot ${dotClass(run)}"></span>
-      ${run.name}
-    </button>
-  `).join('');
+  if (!S.runs.length) { document.getElementById('tabs').innerHTML = ''; return; }
+  const dc = r => ({ success:'s', business_outcome:'w', hitl:'h', failure:'d', discovery:'i' }[r.type] || 'm');
+  document.getElementById('tabs').innerHTML = S.runs.map((r, i) =>
+    `<button class="tab ${i === S.active ? 'active' : ''}" onclick="setRun(${i})">
+      <span class="dot ${dc(r)}"></span>${h(r.name)}
+    </button>`).join('');
 }
+function setRun(i) { S.active = i; renderTabs(); renderDetail(i); }
 
-function setActiveRun(i) {
-  state.activeRun = i;
-  renderTabs();
-  renderRunDetail(i);
-}
-
-function renderRunDetail(i) {
-  if (i >= state.runs.length) return;
-  const run = state.runs[i];
+/* ═══════════════════════════════════════════ DETAIL ═════════════════════════════════════════ */
+function renderDetail(i) {
   const el = document.getElementById('run-detail');
+  if (!S.runs.length) {
+    el.innerHTML = `<div class="timeline">${empty('No log files loaded', 'Drop .log or _summary.json files from your evidence/ folder above.')}</div>`;
+    return;
+  }
+  if (i >= S.runs.length) return;
+  const run = S.runs[i];
+  el.innerHTML =
+    renderOutputs(run) +
+    `<div class="sec">Step Timeline <span class="sec-line"></span></div>` +
+    renderTimeline(run) +
+    `<div class="charts-row">
+      <div class="chart-card"><div class="chart-title">Step Duration (ms)</div><div class="chart-wrap"><canvas id="c-dur"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Action Distribution</div><div class="chart-wrap"><canvas id="c-act"></canvas></div></div>
+    </div>` +
+    `<div class="sec">Event Log <span class="sec-line"></span>
+      <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">
+        Click any row to expand full data
+      </span>
+    </div>` +
+    renderEventLog(run);
 
-  el.innerHTML = `
-    <div class="section-title">Step timeline — ${run.name}</div>
-    ${renderTimeline(run)}
-    <div class="charts-row">
-      <div class="chart-card">
-        <div class="chart-card-title">Step duration breakdown (ms)</div>
-        <div class="chart-wrap"><canvas id="dur-chart" role="img" aria-label="Step duration bar chart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Action type distribution</div>
-        <div class="chart-wrap"><canvas id="action-chart" role="img" aria-label="Action type distribution pie chart"></canvas></div>
-      </div>
-    </div>
-    <div class="section-title">Event log — ${run.name}</div>
-    ${renderEventLog(run)}
-  `;
-
-  // Destroy old charts before creating new ones
-  ['dur-chart', 'action-chart'].forEach(id => {
-    const existing = Chart.getChart(id);
-    if (existing) existing.destroy();
-  });
-
+  ['c-dur','c-act'].forEach(id => { const c = Chart.getChart(id); if (c) c.destroy(); });
   renderCharts(run);
 }
 
+/* ═══════════════════════════════════════════ OUTPUTS ════════════════════════════════════════ */
+function renderOutputs(run) {
+  let outs = run.summary?.outputs;
+  if (!outs) {
+    const ev = run.events.find(e => e.event === 'replay_complete' || e.event === 'goal_complete');
+    if (ev) outs = ev.outputs || ev.extracted_outputs;
+  }
+  if (!outs || !Object.keys(outs).length) return '';
+  const items = Object.entries(outs).map(([k, v]) => {
+    const isNull = v === null || v === undefined;
+    return `<div class="out-item">
+      <div class="out-key">${h(k)}</div>
+      <div class="out-val ${isNull ? 'nv' : ''}">${isNull ? 'null — extraction failed' : h(String(v))}</div>
+    </div>`;
+  }).join('');
+  return `<div class="sec">Extracted Outputs <span class="sec-line"></span></div>
+    <div class="outputs-panel"><div class="outputs-grid">${items}</div></div>`;
+}
+
+/* ═══════════════════════════════════════════ TIMELINE ═══════════════════════════════════════ */
 function renderTimeline(run) {
-  const steps = extractSteps(run.events);
-  if (steps.length === 0) return '<div class="empty">No step events found in this log.</div>';
-
-  const maxDur = Math.max(...steps.map(s => s.dur), 1);
-
-  const barColor = s => {
-    if (!s.success) return '#ef4444';
-    const a = s.action;
-    if (a === 'navigate') return '#818cf8';
-    if (a === 'type')     return '#38bdf8';
-    if (a === 'click')    return '#22c55e';
-    if (a === 'extract')  return '#f59e0b';
-    if (a === 'assert')   return '#c084fc';
-    return '#6b7280';
+  const steps = getSteps(run.events);
+  if (!steps.length) return `<div class="timeline">${empty('No step events', 'Load a replay .log file to see the step timeline.')}</div>`;
+  const maxD = Math.max(...steps.map(s => s.dur), 1);
+  const barC = s => {
+    if (!s.success) return '#f85149';
+    return { navigate:'#818cf8', type:'#58a6ff', click:'#3fb950', extract:'#d29922', assert:'#bc8cff' }[s.action] || '#7d8590';
   };
-
   const rows = steps.map(s => `
-    <div class="timeline-row">
-      <span class="tl-step">${s.id}</span>
-      <span class="tl-action"><span class="action-badge ab-${s.action}">${s.action}</span></span>
-      <div class="tl-bar-wrap">
-        <div class="tl-bar" style="width:${Math.max(2, s.dur/maxDur*100)}%;background:${barColor(s)};opacity:${s.success ? 0.8 : 1}"></div>
-      </div>
+    <div class="tl-row">
+      <span class="tl-step">${h(s.id)}</span>
+      <span><span class="ab ab-${s.action}">${h(s.action)}</span></span>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:${Math.max(1, s.dur/maxD*100)}%;background:${barC(s)};opacity:.8"></div></div>
       <span class="tl-dur">${s.dur > 0 ? s.dur + 'ms' : '—'}</span>
-      <span class="tl-outcome"><span class="tag ${s.success ? 'success' : 'danger'}">${s.success ? 'ok' : 'failed'}</span></span>
-      <span class="tl-desc">${escHtml(s.desc)}</span>
-    </div>
-  `).join('');
+      <span><span class="tag ${s.success ? 's' : 'd'}">${s.success ? 'ok' : 'failed'}</span></span>
+      <span class="tl-desc" title="${h(s.desc)}">${h(s.desc)}</span>
+    </div>`).join('');
 
-  const boEvent = run.events.find(e => e.event === 'business_outcome_detected');
-  const boRow = boEvent ? `
-    <div class="timeline-row" style="background:rgba(245,158,11,0.04)">
-      <span class="tl-step">BO</span>
-      <span class="tl-action"><span class="tag warn">outcome</span></span>
-      <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#f59e0b;opacity:0.4"></div></div>
-      <span class="tl-dur">—</span>
-      <span class="tl-outcome"><span class="tag warn">business</span></span>
-      <span class="tl-desc">${escHtml((boEvent.outcome || '').slice(0, 80))}</span>
-    </div>` : '';
+  const bo = run.events.find(e => e.event === 'business_outcome_detected');
+  const boR = bo ? `<div class="tl-row" style="background:rgba(210,153,34,.04)">
+    <span class="tl-step">BO</span><span><span class="tag w">business</span></span>
+    <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#d29922;opacity:.2"></div></div>
+    <span class="tl-dur">—</span><span></span>
+    <span class="tl-desc">${h((bo.outcome||'').split('\n')[0])}</span></div>` : '';
 
-  const completeEvent = run.events.find(e => e.event === 'replay_complete' || e.event === 'goal_complete');
-  const completeRow = completeEvent ? `
-    <div class="timeline-row" style="background:rgba(34,197,94,0.04)">
-      <span class="tl-step">✓</span>
-      <span class="tl-action"><span class="tag success">complete</span></span>
-      <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#22c55e;opacity:0.5"></div></div>
-      <span class="tl-dur">—</span>
-      <span class="tl-outcome"><span class="tag success">done</span></span>
-      <span class="tl-desc">${completeEvent.summary || JSON.stringify(completeEvent.outputs || {}).slice(0, 80)}</span>
-    </div>` : '';
+  const hitlEv = run.events.find(e => e.event === 'hitl_resolved');
+  const hitlR = hitlEv ? `<div class="tl-row" style="background:rgba(188,140,255,.04)">
+    <span class="tl-step">HITL</span><span><span class="tag h">escalated</span></span>
+    <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#bc8cff;opacity:.2"></div></div>
+    <span class="tl-dur">—</span><span></span>
+    <span class="tl-desc">Human resolved · ${h(hitlEv.url_after||'')}</span></div>` : '';
+
+  const done = run.events.find(e => e.event === 'replay_complete' || e.event === 'goal_complete');
+  const doneR = done ? `<div class="tl-row" style="background:rgba(63,185,80,.04)">
+    <span class="tl-step">✓</span><span><span class="tag s">done</span></span>
+    <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#3fb950;opacity:.3"></div></div>
+    <span class="tl-dur">—</span><span></span>
+    <span class="tl-desc">${h((done.summary || JSON.stringify(done.outputs || {})).slice(0,120))}</span></div>` : '';
 
   return `<div class="timeline">
-    <div class="timeline-header">
-      <span>step &nbsp; action &nbsp; duration bar &nbsp; dur &nbsp; status &nbsp; description</span>
-      <span>${steps.length} step${steps.length !== 1 ? 's' : ''}</span>
-    </div>
-    ${rows}${boRow}${completeRow}
+    <div class="tl-hdr"><span>STEP · ACTION · DURATION · STATUS · STRATEGY</span><span>${steps.length} steps</span></div>
+    ${rows}${boR}${hitlR}${doneR}
   </div>`;
 }
 
+/* ═══════════════════════════════════════════ CHARTS ═════════════════════════════════════════ */
 function renderCharts(run) {
-  const steps = extractSteps(run.events);
-  const isDark = true;
-  const gridColor = 'rgba(255,255,255,0.05)';
-  const textColor = '#6b7280';
-
-  // Duration chart
-  if (steps.length > 0) {
-    const durCtx = document.getElementById('dur-chart');
-    if (durCtx) {
-      new Chart(durCtx, {
-        type: 'bar',
-        data: {
-          labels: steps.map(s => s.id),
-          datasets: [{
-            label: 'Duration (ms)',
-            data: steps.map(s => s.dur),
-            backgroundColor: steps.map(s => s.success ? 'rgba(99,102,241,0.6)' : 'rgba(239,68,68,0.6)'),
-            borderRadius: 3,
-            borderSkipped: false,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } },
-            y: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor },
-                 title: { display: true, text: 'ms', color: textColor, font: { size: 10 } } }
-          }
-        }
-      });
-    }
+  const steps = getSteps(run.events);
+  const gc = 'rgba(255,255,255,.05)', tc = '#7d8590';
+  if (steps.length) {
+    new Chart(document.getElementById('c-dur'), {
+      type: 'bar',
+      data: {
+        labels: steps.map(s => s.id),
+        datasets: [{ data: steps.map(s => s.dur),
+          backgroundColor: steps.map(s => s.success ? 'rgba(99,102,241,.6)' : 'rgba(248,81,73,.6)'),
+          borderRadius: 3, borderSkipped: false }]
+      },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw}ms`}}},
+        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},
+                y:{ticks:{color:tc,font:{size:10}},grid:{color:gc},title:{display:true,text:'ms',color:tc,font:{size:10}}}}}
+    });
+  } else {
+    document.getElementById('c-dur').parentElement.innerHTML = empty('No timing data', 'Load a replay log to see step durations.');
   }
 
-  // Action type donut
-  const actionCtx = document.getElementById('action-chart');
-  if (actionCtx) {
-    const actionCounts = {};
-    run.events.filter(e => e.event === 'step_done').forEach(e => {
-      const a = e.result?.action || 'unknown';
-      actionCounts[a] = (actionCounts[a] || 0) + 1;
+  const counts = {};
+  run.events.forEach(e => {
+    if (e.event === 'step_done') { const a = e.result?.action||'unknown'; counts[a]=(counts[a]||0)+1; }
+    if (e.event === 'tool_call') { const a = e.tool||'unknown'; counts[a]=(counts[a]||0)+1; }
+  });
+  const labs = Object.keys(counts);
+  if (labs.length) {
+    const pal = ['#818cf8','#58a6ff','#3fb950','#d29922','#bc8cff','#f85149','#7d8590'];
+    new Chart(document.getElementById('c-act'), {
+      type: 'doughnut',
+      data: { labels: labs, datasets:[{ data:labs.map(k=>counts[k]),
+        backgroundColor:labs.map((_,i)=>pal[i%pal.length]), borderColor:'#161b22', borderWidth:2 }] },
+      options: { responsive:true, maintainAspectRatio:false, cutout:'62%',
+        plugins:{ legend:{display:true,position:'right',labels:{color:tc,font:{size:10},boxWidth:10,padding:8}}}}
     });
-    // Also count from discovery tool calls
-    run.events.filter(e => e.event === 'tool_call').forEach(e => {
-      const a = e.tool || 'unknown';
-      actionCounts[a] = (actionCounts[a] || 0) + 1;
-    });
-
-    const labels = Object.keys(actionCounts);
-    const palette = ['#818cf8','#38bdf8','#22c55e','#f59e0b','#c084fc','#f87171','#6b7280'];
-
-    if (labels.length > 0) {
-      new Chart(actionCtx, {
-        type: 'doughnut',
-        data: {
-          labels,
-          datasets: [{
-            data: labels.map(k => actionCounts[k]),
-            backgroundColor: labels.map((_, i) => palette[i % palette.length]),
-            borderColor: '#171b26',
-            borderWidth: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '65%',
-          plugins: {
-            legend: {
-              display: true,
-              position: 'right',
-              labels: { color: textColor, font: { size: 10 }, boxWidth: 10, padding: 8 }
-            }
-          }
-        }
-      });
-    } else {
-      actionCtx.parentElement.innerHTML = '<div class="empty">No action events found.</div>';
-    }
+  } else {
+    document.getElementById('c-act').parentElement.innerHTML = empty('No action data', 'No step events found in this log.');
   }
 }
 
-function renderEventLog(run) {
-  const categories = ['all', 'step', 'llm', 'hitl', 'error', 'output'];
+/* ═══════════════════════════════════════════ GALLERY ════════════════════════════════════════ */
+function renderGallery() {
+  const sec = document.getElementById('gallery-sec');
+  const container = document.getElementById('gallery');
+  if (!S.images.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
 
-  const categorize = ev => {
-    const e = ev.event || '';
+  container.innerHTML = S.images.map((img, i) => {
+    // Classify image type by filename
+    const fn = img.name.toLowerCase();
+    const isHITL     = fn.includes('hitl') || fn.includes('intervention') || fn.includes('annotated');
+    const isFailure  = fn.includes('failure') || fn.includes('fail') || fn.includes('error');
+    const isDiscovery= fn.includes('discovery');
+    const isReplay   = fn.includes('replay');
+
+    const cls = isHITL ? 'hitl-img' : isFailure ? 'failure-img' : isReplay ? 'success-img' : '';
+
+    // Build human-readable label
+    let label = img.name;
+    let desc = '';
+    if (fn.includes('annotated'))    { label = '🔴 HITL Annotated Screenshot'; desc = 'Automatically annotated with error context, step ID, and reason — taken at the moment automation got stuck.'; }
+    else if (fn.includes('_raw'))    { label = '📷 Raw Screenshot (pre-annotation)'; desc = 'Original screenshot before annotation overlay was applied.'; }
+    else if (isHITL)                 { label = '🛑 HITL Screenshot'; desc = 'Browser state when HITL escalation was triggered.'; }
+    else if (fn.includes('failure')) { label = '❌ Failure Screenshot'; desc = 'Browser state at the point of hard failure.'; }
+    else if (fn.includes('discovery_final')) { label = '🔍 Discovery Final State'; desc = 'Browser state at the end of the LLM discovery run.'; }
+    else if (fn.includes('replay_final'))    { label = '✅ Replay Final State'; desc = 'Browser state at the end of a successful replay run.'; }
+
+    const kb = (img.size / 1024).toFixed(1);
+    return `<div class="gallery-item ${cls}">
+      <div class="img-header">
+        <span class="img-name">${h(label || img.name)}</span>
+        <span class="img-meta">${kb} KB</span>
+        ${isHITL ? `<span class="tag h">HITL</span>` : isFailure ? `<span class="tag d">failure</span>` : isDiscovery ? `<span class="tag i">discovery</span>` : isReplay ? `<span class="tag s">replay</span>` : ''}
+      </div>
+      <div class="img-wrap" onclick="openLB('${img.src.replace(/'/g,"\\'")}','${h(label||img.name)}')">
+        <img src="${img.src}" alt="${h(img.name)}" id="gimg-${i}" loading="lazy">
+        <div class="img-expand-hint">click to enlarge</div>
+      </div>
+      ${desc ? `<div class="img-caption">${h(desc)}<br><span style="opacity:.5;font-size:10px;font-family:var(--mono)">${h(img.name)}</span></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════ EVENT LOG ══════════════════════════════════════ */
+function renderEventLog(run) {
+  if (!run.events.length) return `<div class="log-card">${empty('No events', 'The file was loaded but contained no parseable JSON lines.')}</div>`;
+
+  const cats = ['all','step','llm','hitl','error','output'];
+  const cat = ev => {
+    const e = ev.event||'';
     if (e.includes('step')) return 'step';
-    if (e.includes('llm') || e.includes('tool')) return 'llm';
-    if (e.includes('hitl') || e.includes('intervention')) return 'hitl';
-    if (e.includes('error') || e.includes('fail')) return 'error';
-    if (e.includes('output') || e.includes('extract') || e.includes('complete')) return 'output';
+    if (e.includes('llm')||e.includes('tool')||e.includes('observed')) return 'llm';
+    if (e.includes('hitl')||e.includes('intervention')) return 'hitl';
+    if (e.includes('error')||e.includes('fail')||e.includes('blocked')) return 'error';
+    if (e.includes('output')||e.includes('extract')||e.includes('complete')||e.includes('goal')) return 'output';
     return 'other';
   };
-
-  const rowClass = ev => {
-    const e = ev.event || '';
-    if (e.includes('error') || e.includes('fail')) return 'ev-error';
-    if (e.includes('retry') || e.includes('recover')) return 'ev-warn';
-    if (e.includes('hitl') || e.includes('intervention')) return 'ev-hitl';
-    if (e.includes('complete') || e.includes('success') || e.includes('extracted')) return 'ev-done';
-    return '';
+  const cls = ev => {
+    const e = ev.event||'';
+    if (e.includes('error')||e.includes('fail')) return 'ev-error';
+    if (e.includes('retry')||e.includes('recover')) return 'ev-warn';
+    if (e.includes('hitl')||e.includes('intervention')) return 'ev-hitl';
+    if (e.includes('complete')||e.includes('extracted')||e.includes('goal_complete')) return 'ev-done';
+    return 'ev-default';
+  };
+  const ts = ev => {
+    const t = ev.ts||ev.timestamp||'';
+    if (!t) return '—';
+    try { return new Date(t).toISOString().slice(11,23); } catch(_) { return t.slice(0,12); }
+  };
+  // Full data — NOT sliced, NOT truncated. Collapse/expand via CSS.
+  const data = ev => {
+    const skip = new Set(['event','ts','timestamp']);
+    return Object.entries(ev).filter(([k]) => !skip.has(k))
+      .map(([k,v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}`).join('\n');
   };
 
-  const fmtData = ev => {
-    const skip = ['event','ts','timestamp'];
-    const parts = Object.entries(ev)
-      .filter(([k]) => !skip.includes(k))
-      .map(([k,v]) => `${k}:${JSON.stringify(v)}`)
-      .join(' · ');
-    return parts.slice(0, 120);
-  };
-
-  const fmtTs = ev => {
-    const ts = ev.ts || ev.timestamp || '';
-    if (!ts) return '—';
-    try { return new Date(ts).toISOString().slice(11, 23); } catch(e) { return ts.slice(0, 12); }
-  };
-
-  const rows = run.events.map((ev, idx) => {
-    const cat = categorize(ev);
-    return `<div class="log-row ${rowClass(ev)}" data-cat="${cat}">
-      <span class="log-ts">${fmtTs(ev)}</span>
-      <span class="log-event">${escHtml(ev.event || '?')}</span>
-      <span class="log-data">${escHtml(fmtData(ev))}</span>
+  const rows = run.events.map((ev, i) => {
+    const full = data(ev);
+    const long = full.length > 100 || full.includes('\n');
+    return `<div class="log-row ${cls(ev)}" data-cat="${cat(ev)}" id="lr${i}" onclick="tog(${i})">
+      <span class="log-ts">${ts(ev)}</span>
+      <span class="log-event">${h(ev.event||'?')}</span>
+      <span class="log-data" id="ld${i}">${h(full) || '<span style="opacity:.3">—</span>'}</span>
+      ${long ? `<button class="log-expand" id="le${i}" onclick="event.stopPropagation();tog(${i})">expand</button>` : '<span></span>'}
     </div>`;
   }).join('');
 
-  const filterBtns = categories.map(c =>
-    `<button class="log-filter ${c === 'all' ? 'on' : ''}" data-filter="${c}" onclick="filterLog(this)">${c}</button>`
+  const filts = cats.map(c =>
+    `<button class="filt ${c==='all'?'on':''}" data-f="${c}" onclick="applyF(this)">${c}</button>`
   ).join('');
 
-  return `<div class="log-wrap">
-    <div class="log-filter-bar">${filterBtns}</div>
+  return `<div class="log-card">
+    <div class="log-toolbar">
+      <span class="log-label">Filter</span>${filts}
+      <span style="margin-left:auto;font-size:10px;color:var(--muted)">${run.events.length} events</span>
+    </div>
     <div class="log-scroll" id="log-scroll">${rows}</div>
   </div>`;
 }
 
-function filterLog(btn) {
-  document.querySelectorAll('.log-filter').forEach(b => b.classList.remove('on'));
+function tog(i) {
+  const row = document.getElementById('lr'+i), btn = document.getElementById('le'+i);
+  if (!row) return;
+  const ex = row.classList.toggle('expanded');
+  if (btn) btn.textContent = ex ? 'collapse' : 'expand';
+}
+function applyF(btn) {
+  document.querySelectorAll('.filt').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  const filter = btn.dataset.filter;
-  document.querySelectorAll('#log-scroll .log-row').forEach(row => {
-    if (filter === 'all') { row.style.display = ''; return; }
-    row.style.display = row.dataset.cat === filter ? '' : 'none';
+  const f = btn.dataset.f;
+  document.querySelectorAll('#log-scroll .log-row').forEach(r => {
+    r.style.display = (f === 'all' || r.dataset.cat === f) ? '' : 'none';
   });
 }
 
+/* ═══════════════════════════════════════════ HITL ═══════════════════════════════════════════ */
 function renderHITL() {
-  if (state.interventions.length === 0) {
-    document.getElementById('hitl-section').style.display = 'none';
-    return;
-  }
-  document.getElementById('hitl-section').style.display = 'block';
+  const sec = document.getElementById('hitl-sec');
+  if (!S.interventions.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
 
-  const cards = state.interventions.map(req => `
+  document.getElementById('hitl-cards').innerHTML = S.interventions.map(req => `
     <div class="hitl-card">
-      <div class="hitl-header">
-        <span class="hitl-badge">🛑 HITL intervention</span>
-        <span class="tag ${req.status === 'resolved' ? 'success' : 'warn'}">${req.status}</span>
-        <span style="color:var(--muted);font-size:11px;margin-left:auto">${req.severity?.toUpperCase()} severity</span>
+      <div class="hitl-hdr">
+        <span class="hitl-badge">🛑 HITL Intervention</span>
+        <span class="tag ${req.status==='resolved'?'s':'w'}">${req.status}</span>
+        <span class="tag m">${(req.severity||'medium').toUpperCase()}</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--muted)">${(req.created_at||'').slice(0,19).replace('T',' ')} UTC</span>
       </div>
       <div class="hitl-grid">
-        <span class="hitl-key">Request ID</span><span class="hitl-val">${req.request_id}</span>
-        <span class="hitl-key">Capability</span><span class="hitl-val">${req.capability_name}</span>
-        <span class="hitl-key">Stuck at step</span><span class="hitl-val">${req.current_step_id}</span>
-        <span class="hitl-key">Reason</span><span class="hitl-val" style="white-space:normal">${escHtml(req.reason || '')}</span>
-        <span class="hitl-key">URL when stuck</span><span class="hitl-val">${req.current_url}</span>
-        <span class="hitl-key">Created</span><span class="hitl-val">${req.created_at?.slice(0,19).replace('T',' ')}</span>
-        ${req.human_notes ? `<span class="hitl-key">Human notes</span><span class="hitl-val">${escHtml(req.human_notes)}</span>` : ''}
-        ${req.screenshot_path ? `<span class="hitl-key">Screenshot</span><span class="hitl-val">${escHtml(req.screenshot_path)}</span>` : ''}
+        <span class="hk">Request ID</span><span class="hv">${h(req.request_id||'—')}</span>
+        <span class="hk">Capability</span><span class="hv">${h(req.capability_name||'—')}</span>
+        <span class="hk">Stuck at step</span><span class="hv">${h(req.current_step_id||'—')}</span>
+        <span class="hk">Step description</span><span class="hv">${h(req.current_step_description||'—')}</span>
+        <span class="hk">URL when stuck</span><span class="hv">${h(req.current_url||'—')}</span>
+        <span class="hk">Human notes</span><span class="hv">${h(req.human_notes||'(none)')}</span>
+        ${req.screenshot_path ? `<span class="hk">Screenshot file</span><span class="hv">${h(req.screenshot_path)}</span>` : ''}
+        <span class="hk" style="grid-column:1/-1;margin-top:4px">Full error reason</span>
+        <div class="hitl-reason">${h(req.reason||'—')}</div>
+        ${req.context && Object.keys(req.context).length ? `
+        <span class="hk" style="grid-column:1/-1;margin-top:4px">Context</span>
+        <div class="hitl-reason" style="color:var(--muted)">${h(JSON.stringify(req.context,null,2))}</div>` : ''}
       </div>
-    </div>
-  `).join('');
-
-  document.getElementById('hitl-cards').innerHTML = cards;
+    </div>`).join('');
 }
 
-/* ── Helpers ── */
-function extractSteps(events) {
-  const starts = {};
-  const results = [];
+/* ═══════════════════════════════════════════ LIGHTBOX ═══════════════════════════════════════ */
+function openLB(src, caption) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lightbox-caption').textContent = caption;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLB() { document.getElementById('lightbox').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
 
+/* ═══════════════════════════════════════════ HELPERS ════════════════════════════════════════ */
+function getSteps(events) {
+  const starts = {}, out = [];
   events.forEach(e => {
-    if (e.event === 'step_start') {
-      starts[e.step_id] = new Date(e.ts || e.timestamp || 0);
-    }
+    if (e.event === 'step_start') starts[e.step_id] = new Date(e.ts||e.timestamp||0);
     if (e.event === 'step_done') {
-      const start = starts[e.step_id];
-      const end   = new Date(e.ts || e.timestamp || 0);
-      const dur   = start ? Math.round(end - start) : 0;
-      results.push({
-        id:      e.step_id || '?',
-        action:  e.result?.action || '?',
-        success: e.result?.success ?? true,
-        desc:    e.result?.strategy_used
-                   ? `via ${e.result.strategy_used}`
-                   : e.result?.url || e.result?.typed || '',
-        dur:     dur >= 0 ? dur : 0,
-      });
+      const s = starts[e.step_id];
+      const dur = s ? Math.max(0, Math.round(new Date(e.ts||e.timestamp||0) - s)) : 0;
+      out.push({ id: e.step_id||'?', action: e.result?.action||'?', success: e.result?.success??true,
+        desc: e.result?.strategy_used ? 'locator: '+e.result.strategy_used : e.result?.url||e.result?.typed||e.result?.error?.slice(0,60)||'', dur });
     }
   });
-
-  return results;
+  return out;
 }
-
-function escHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+function empty(title, sub) {
+  return `<div class="empty"><div class="empty-icon">∅</div><div class="empty-title">${h(title)}</div><div class="empty-sub">${h(sub)}</div></div>`;
+}
+function h(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>
