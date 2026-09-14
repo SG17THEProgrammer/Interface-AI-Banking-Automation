@@ -426,8 +426,9 @@ class ReplayEngine:
         with sync_playwright() as pw:
             browser = pw.chromium.launch(
                 headless=self.headless,
-                args=["--no-sandbox", "--disable-dev-shm-usage"],
-                slow_mo=80 if not self.headless else 0,
+                args=["--no-sandbox", "--disable-dev-shm-usage",
+                      "--start-maximized"],
+                slow_mo=500 if not self.headless else 0,   # 500ms so you can see each action
             )
             context = browser.new_context(
                 viewport={"width": 1280, "height": 900})
