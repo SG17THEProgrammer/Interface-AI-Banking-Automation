@@ -426,7 +426,7 @@ class ReplayEngine:
         with sync_playwright() as pw:
             browser = pw.chromium.launch(
                 headless=self.headless,
-                args=["--no-sandbox", "--disable-dev-shm-usage",
+                args=["--no-sandbox",
                       "--start-maximized"],
                 slow_mo=500 if not self.headless else 0,   # 500ms so you can see each action
             )
@@ -486,7 +486,10 @@ class ReplayEngine:
                     if not step_result.get("success"):
                         # Take a failure screenshot
                         screenshot_path = self._screenshot(
-                            page, f"failure_{step.step_id}")
+                            page, f"failure_{step.step_id}",
+                            step_id=step.step_id,
+                            reason=step_result.get("error", "Step failed")
+                        )
                         log({"event": "step_failed", "step_id": step.step_id,
                              "error": step_result.get("error"), "screenshot": screenshot_path})
 
@@ -595,12 +598,17 @@ class ReplayEngine:
             retries_used=retries_used,
         )
 
-    def _screenshot(self, page: Page, name: str) -> str:
+    def _screenshot(self, page: Page, name: str,
+                    step_id: str = "", reason: str = "") -> str:
         try:
             ss_dir = os.path.join(self.evidence_dir, "screenshots")
             os.makedirs(ss_dir, exist_ok=True)
             path = os.path.join(ss_dir, f"{name}.png")
             page.screenshot(path=path)
+            if reason and ("failure" in name or "hitl" in name.lower()):
+                from hitl import annotate_screenshot
+                annotate_screenshot(path, step_id or name,
+                                    reason, page.url, path)
             return path
         except Exception:
             return ""

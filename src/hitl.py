@@ -60,20 +60,13 @@ def annotate_screenshot(
     out_path: str = None,
 ) -> str:
     """
-    Take a raw Playwright screenshot and annotate it so a human immediately
-    understands what went wrong:
-      - Semi-transparent dark overlay across the top
-      - RED banner bar: "[!!] AUTOMATION STUCK -- HUMAN INTERVENTION REQUIRED"
-      - Step ID, reason (word-wrapped), URL, timestamp
-      - Red dashed border around the whole image
-
-    Returns the path to the annotated image (overwrites in-place if out_path
-    is None).
+    Annotate a screenshot with a red error banner showing what went wrong.
+    Windows-first font loading (Consolas -> Arial -> Courier -> default).
     """
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
-        logger.warning("[hitl] Pillow not installed -- skipping screenshot annotation")
+        logger.warning("[hitl] Pillow not installed - skipping annotation")
         return raw_path
 
     out_path = out_path or raw_path
@@ -82,92 +75,62 @@ def annotate_screenshot(
         img = Image.open(raw_path).convert("RGBA")
         W, H = img.size
 
-        # -- Overlay layer --------------------------------------------------
         overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
 
-        BANNER_H = 110          # top banner height in pixels
-        BORDER   = 6            # red border thickness
+        BANNER_H = 120
+        BORDER   = 5
 
-        # dark semi-transparent top banner
-        draw.rectangle([(0, 0), (W, BANNER_H)], fill=(15, 10, 10, 210))
+        # Dark semi-transparent banner across top
+        draw.rectangle([(0, 0), (W, BANNER_H)], fill=(10, 5, 5, 220))
 
-        # red dashed border around whole image
+        # Red border around the whole image
         for t in range(BORDER):
-            draw.rectangle(
-                [(t, t), (W - 1 - t, H - 1 - t)],
-                outline=(220, 40, 40, 200),
-            )
+            draw.rectangle([(t, t), (W-1-t, H-1-t)], outline=(210, 35, 35, 200))
 
-        # -- Text -----------------------------------------------------------
-        # Try to load a monospace font; fall back to default if unavailable
-        def load_font(size):
-            for name in [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
-                "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
-                "/System/Library/Fonts/Menlo.ttc",
-                "C:/Windows/Fonts/consola.ttf",
-            ]:
+        # Font loading - Windows paths first, then Linux, then default
+        def load_font(size, bold=False):
+            candidates = [
+                "C:/Windows/Fonts/consolab.ttf" if bold else "C:/Windows/Fonts/consola.ttf",
+                "C:/Windows/Fonts/arialbd.ttf"  if bold else "C:/Windows/Fonts/arial.ttf",
+                "C:/Windows/Fonts/courbd.ttf"   if bold else "C:/Windows/Fonts/cour.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf" if bold
+                    else "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf" if bold
+                    else "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+            ]
+            for path in candidates:
                 try:
-                    return ImageFont.truetype(name, size)
+                    return ImageFont.truetype(path, size)
                 except Exception:
-                    pass
+                    continue
             return ImageFont.load_default()
 
-        def load_font_regular(size):
-            for name in [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-                "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
-                "/System/Library/Fonts/Menlo.ttc",
-                "C:/Windows/Fonts/consola.ttf",
-            ]:
-                try:
-                    return ImageFont.truetype(name, size)
-                except Exception:
-                    pass
-            return ImageFont.load_default()
+        font_title = load_font(15, bold=True)
+        font_body  = load_font(12, bold=False)
 
-        font_title  = load_font(15)
-        font_body   = load_font_regular(11)
+        # Red alert bar at very top
+        draw.rectangle([(0, 0), (W, 30)], fill=(185, 28, 28, 245))
+        draw.text((12, 7), "[!!] AUTOMATION STUCK - HUMAN INTERVENTION REQUIRED",
+                  font=font_title, fill=(255, 220, 220, 255))
 
-        # Red alert bar
-        draw.rectangle([(0, 0), (W, 28)], fill=(190, 30, 30, 240))
-        draw.text(
-            (12, 6),
-            "[!!]  AUTOMATION STUCK -- HUMAN INTERVENTION REQUIRED",
-            font=font_title,
-            fill=(255, 220, 220, 255),
-        )
+        # Step + timestamp
+        import datetime
+        ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        draw.text((12, 38), f"Step: {step_id}    |    {ts}",
+                  font=font_body, fill=(180, 180, 180, 220))
 
-        # Step + timestamp line
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-        draw.text(
-            (12, 34),
-            f"Step: {step_id}    |    {ts}",
-            font=font_body,
-            fill=(180, 180, 180, 220),
-        )
+        # URL
+        url_display = current_url[:115] + "..." if len(current_url) > 115 else current_url
+        draw.text((12, 60), f"URL:  {url_display}",
+                  font=font_body, fill=(140, 180, 255, 230))
 
-        # URL line
-        url_display = current_url[:110] + "..." if len(current_url) > 110 else current_url
-        draw.text(
-            (12, 52),
-            f"URL:  {url_display}",
-            font=font_body,
-            fill=(140, 180, 255, 220),
-        )
+        # Reason (first line, truncated)
+        reason_line = reason.split("\n")[0][:200]
+        draw.text((12, 82), f"Why:  {reason_line}",
+                  font=font_body, fill=(255, 160, 80, 240))
 
-        # Reason -- word-wrap to fit banner width
-        reason_clean = reason.split("\n")[0][:200]   # first line, max 200 chars
-        wrapped = textwrap.fill(reason_clean, width=int(W / 7))
-        draw.text(
-            (12, 70),
-            f"Why:  {wrapped}",
-            font=font_body,
-            fill=(255, 160, 100, 230),
-        )
-
-        # Merge overlay onto image
+        # Compose and save
         combined = Image.alpha_composite(img, overlay)
         combined.convert("RGB").save(out_path, "PNG")
         logger.info(f"[hitl] Annotated screenshot saved: {out_path}")
@@ -175,7 +138,11 @@ def annotate_screenshot(
 
     except Exception as e:
         logger.warning(f"[hitl] Screenshot annotation failed: {e}")
+        import traceback
+        traceback.print_exc()
         return raw_path
+
+
 
 
 # ---------------------------------------------------------------------------
