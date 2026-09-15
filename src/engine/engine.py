@@ -1,0 +1,290 @@
+"""
+engine/engine.py
+-----------------
+Deterministic Replay Engine — no LLM, runs every time.
+
+Reads a CapabilityArtifact + runtime parameters, executes each step via
+Playwright, handles the three-part error taxonomy, and returns a typed
+ReplayResult to the caller.
+
+Error taxonomy:
+  1. BUSINESS OUTCOME  — legitimate non-success (member not found, etc.)
+  2. RECOVERABLE       — transient block dismissed automatically (cookie banner)
+  3. HARD FAILURE      — genuine error with full debug context
+"""
+
+from __future__ import annotations
+import json
+import logging
+import os
+import time
+import traceback
+from dataclasses import dataclass, asdict, field
+from datetime import datetime, timezone
+from typing import Any, Optional
+
+from playwright.sync_api import sync_playwright
+
+from artifact import CapabilityArtifact
+from engine.executor import execute_step
+from engine.extractor import check_for_business_outcome, try_recover_page, extract_output
+from engine.locator import resolve_element
+from guardrails import Guardrails, DEFAULT_POLICY
+from hitl.controller import HITLController
+
+logger = logging.getLogger(__name__)
+
+
+# ── Result type ───────────────────────────────────────────────────────────
+
+@dataclass
+class ReplayResult:
+    outcome_type: str       # "success" | "business_outcome" | "hard_failure" | "hitl_escalated"
+    success: bool
+    outputs: dict
+    business_outcome: Optional[str] = None
+    error: Optional[str] = None
+    failed_step_id: Optional[str] = None
+    expected_state: Optional[str] = None
+    observed_state: Optional[str] = None
+    screenshot_path: Optional[str] = None
+    steps_completed: int = 0
+    duration_seconds: float = 0.0
+    log_entries: list = field(default_factory=list)
+    retries_used: int = 0
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+# ── Engine ────────────────────────────────────────────────────────────────
+
+class ReplayEngine:
+    def __init__(
+        self,
+        evidence_dir: str = "evidence",
+        headless: bool = True,
+        max_retries_per_step: int = 2,
+        hitl_enabled: bool = True,
+    ):
+        self.evidence_dir = evidence_dir
+        self.headless = headless
+        self.max_retries = max_retries_per_step
+        self.hitl_enabled = hitl_enabled
+        self.guardrails = Guardrails(DEFAULT_POLICY)
+        self.hitl = HITLController(evidence_dir=evidence_dir)
+
+    # ── Public entry point ────────────────────────────────────────────────
+
+    def run(
+        self,
+        artifact: CapabilityArtifact,
+        parameters: dict,
+        log_suffix: str = "run",
+        non_interactive: bool = True,
+    ) -> ReplayResult:
+        start = time.time()
+        run_log: list[dict] = []
+        steps_completed = 0
+        retries_used = 0
+
+        def log(entry: dict):
+            entry["ts"] = datetime.now(timezone.utc).isoformat()
+            run_log.append(entry)
+            logger.info(f"[replay] {json.dumps(entry)}")
+
+        log({"event": "replay_start", "capability": artifact.name,
+             "params": self.guardrails.redact_dict(parameters)})
+
+        # Parameter validation
+        try:
+            self.guardrails.validate_parameters(parameters, artifact.parameters)
+        except ValueError as e:
+            self._save_log(run_log, log_suffix)
+            return ReplayResult(
+                outcome_type="hard_failure", success=False, outputs={},
+                error=str(e), duration_seconds=time.time() - start,
+                log_entries=run_log,
+            )
+
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(
+                headless=self.headless,
+                args=["--no-sandbox", "--start-maximized"],
+                slow_mo=300 if not self.headless else 0,
+            )
+            ctx  = browser.new_context(viewport={"width": 1280, "height": 900})
+            page = ctx.new_page()
+            screenshot_path = None
+            extracted: dict = {}
+
+            try:
+                for step in artifact.steps:
+                    log({"event": "step_start", "step_id": step.step_id,
+                         "action": step.action, "url": page.url})
+
+                    # Check for business outcome before extract/assert steps
+                    if step.action in ("assert", "extract") or steps_completed > 2:
+                        outcome = check_for_business_outcome(page)
+                        if outcome:
+                            log({"event": "business_outcome_detected", "outcome": outcome})
+                            self._save_log(run_log, log_suffix)
+                            browser.close()
+                            return ReplayResult(
+                                outcome_type="business_outcome", success=False,
+                                outputs={}, business_outcome=outcome,
+                                steps_completed=steps_completed,
+                                duration_seconds=time.time() - start,
+                                log_entries=run_log,
+                            )
+
+                    # Recover transient blocking conditions
+                    if try_recover_page(page):
+                        log({"event": "recovered_blocking_condition", "step": step.step_id})
+                        retries_used += 1
+
+                    # Execute with retries
+                    step_result = None
+                    for attempt in range(self.max_retries + 1):
+                        step_result = execute_step(page, step, parameters, self.guardrails)
+                        if step_result.get("success"):
+                            break
+                        if attempt < self.max_retries:
+                            log({"event": "step_retry", "step_id": step.step_id,
+                                 "attempt": attempt + 1, "error": step_result.get("error")})
+                            page.wait_for_timeout(1000)
+                            retries_used += 1
+                            try_recover_page(page)
+
+                    log({"event": "step_done", "step_id": step.step_id, "result": step_result})
+
+                    if not step_result.get("success"):
+                        screenshot_path = self._screenshot(
+                            page, f"failure_{step.step_id}",
+                            step_id=step.step_id,
+                            reason=step_result.get("error", "Step failed"),
+                        )
+                        log({"event": "step_failed", "step_id": step.step_id,
+                             "error": step_result.get("error"),
+                             "screenshot": screenshot_path})
+
+                        if step_result.get("blocked"):
+                            self._save_log(run_log, log_suffix)
+                            browser.close()
+                            return ReplayResult(
+                                outcome_type="hard_failure", success=False, outputs={},
+                                error=step_result["error"],
+                                failed_step_id=step.step_id,
+                                screenshot_path=screenshot_path,
+                                steps_completed=steps_completed,
+                                duration_seconds=time.time() - start,
+                                log_entries=run_log,
+                                retries_used=retries_used,
+                            )
+
+                        # HITL escalation
+                        if self.hitl_enabled:
+                            hitl_result = self.hitl.escalate(
+                                page=page,
+                                capability_name=artifact.name,
+                                goal=artifact.description,
+                                current_step_id=step.step_id,
+                                current_step_description=step.description,
+                                reason=step_result.get("error", "Step failed"),
+                                context={"parameters": parameters,
+                                         "steps_completed": steps_completed},
+                                non_interactive=non_interactive,
+                            )
+                            if hitl_result["resolved"]:
+                                log({"event": "hitl_resolved", "step_id": step.step_id,
+                                     "url_after": hitl_result["url_after"]})
+                                steps_completed += 1
+                                continue
+
+                        # Hard failure — no recovery possible
+                        self._save_log(run_log, log_suffix)
+                        browser.close()
+                        return ReplayResult(
+                            outcome_type="hard_failure", success=False, outputs={},
+                            error=step_result.get("error"),
+                            failed_step_id=step.step_id,
+                            expected_state=step.description,
+                            observed_state=f"Error: {step_result.get('error')}",
+                            screenshot_path=screenshot_path,
+                            steps_completed=steps_completed,
+                            duration_seconds=time.time() - start,
+                            log_entries=run_log,
+                            retries_used=retries_used,
+                        )
+
+                    steps_completed += 1
+
+                # ── All steps done — extract outputs ──────────────────────
+                log({"event": "extracting_outputs"})
+                for output_field in artifact.outputs:
+                    try:
+                        val = extract_output(page, output_field, self.guardrails)
+                        extracted[output_field.name] = val
+                        log({"event": "output_extracted",
+                             "field": output_field.name, "value": str(val)[:100]})
+                    except Exception as e:
+                        log({"event": "output_extraction_failed",
+                             "field": output_field.name, "error": str(e)})
+                        extracted[output_field.name] = None
+
+                screenshot_path = self._screenshot(page, "replay_final")
+                log({"event": "replay_complete", "outputs": extracted, "steps": steps_completed})
+
+            except Exception as e:
+                screenshot_path = self._screenshot(page, "replay_error")
+                log({"event": "replay_error", "error": str(e),
+                     "trace": traceback.format_exc()})
+                self._save_log(run_log, log_suffix)
+                browser.close()
+                return ReplayResult(
+                    outcome_type="hard_failure", success=False, outputs={},
+                    error=str(e), screenshot_path=screenshot_path,
+                    steps_completed=steps_completed,
+                    duration_seconds=time.time() - start,
+                    log_entries=run_log,
+                )
+            finally:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+
+        self._save_log(run_log, log_suffix)
+        return ReplayResult(
+            outcome_type="success", success=True, outputs=extracted,
+            steps_completed=steps_completed,
+            duration_seconds=time.time() - start,
+            log_entries=run_log,
+            screenshot_path=screenshot_path,
+            retries_used=retries_used,
+        )
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+
+    def _screenshot(
+        self, page, name: str, step_id: str = "", reason: str = ""
+    ) -> str:
+        try:
+            ss_dir = os.path.join(self.evidence_dir, "screenshots")
+            os.makedirs(ss_dir, exist_ok=True)
+            path = os.path.join(ss_dir, f"{name}.png")
+            page.screenshot(path=path)
+            if reason and ("failure" in name or "hitl" in name.lower()):
+                from hitl.annotator import annotate_screenshot
+                annotate_screenshot(path, step_id or name, reason, page.url, path)
+            return path
+        except Exception:
+            return ""
+
+    def _save_log(self, run_log: list, suffix: str) -> str:
+        os.makedirs(self.evidence_dir, exist_ok=True)
+        path = os.path.join(self.evidence_dir, f"replay_{suffix}.log")
+        with open(path, "w") as f:
+            for entry in run_log:
+                f.write(json.dumps(entry) + "\n")
+        return path

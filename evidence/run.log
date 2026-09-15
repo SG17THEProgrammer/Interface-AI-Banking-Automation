@@ -128,3 +128,401 @@
 2026-09-12 12:43:31,728  INFO     replay — [replay] {"event": "step_done", "step_id": "s3", "result": {"step_id": "s3", "action": "click", "success": true, "strategy_used": "aria-label"}, "ts": "2026-09-12T07:13:31.728700+00:00"}
 2026-09-12 12:43:31,729  INFO     replay — [replay] {"event": "step_start", "step_id": "s4", "action": "extract", "url": "http://localhost:8080/member/BADTYPE", "ts": "2026-09-12T07:13:31.729697+00:00"}
 2026-09-12 12:43:31,824  INFO     replay — [replay] {"event": "business_outcome_detected", "outcome": "No record found for Member ID: BADTYPE.\nPlease verify the ID and try again, or contact your supervisor.", "ts": "2026-09-12T07:13:31.824357+00:00"}
+2026-09-15 15:46:14,111  INFO     engine.engine — [replay] {"event": "replay_start", "capability": "check_member_balance", "params": {"member_id": "100001"}, "ts": "2026-09-15T10:16:14.111811+00:00"}
+2026-09-15 15:46:14,951  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s1_navigate", "action": "navigate", "url": "about:blank", "ts": "2026-09-15T10:16:14.951279+00:00"}
+2026-09-15 15:46:16,369  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s1_navigate", "result": {"step_id": "s1_navigate", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "checkpoint_passed": true}, "ts": "2026-09-15T10:16:16.369750+00:00"}
+2026-09-15 15:46:16,369  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s2_type_id", "action": "type", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:16:16.369750+00:00"}
+2026-09-15 15:46:16,775  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s2_type_id", "result": {"step_id": "s2_type_id", "action": "type", "success": true, "strategy_used": "aria-label", "typed": "100001"}, "ts": "2026-09-15T10:16:16.775801+00:00"}
+2026-09-15 15:46:16,776  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s3_click_search", "action": "click", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:16:16.776795+00:00"}
+2026-09-15 15:46:17,993  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s3_click_search", "result": {"step_id": "s3_click_search", "action": "click", "success": true, "strategy_used": "css", "checkpoint_passed": true}, "ts": "2026-09-15T10:16:17.993843+00:00"}
+2026-09-15 15:46:17,994  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s4_assert_result", "action": "assert", "url": "http://localhost:8080/member/100001", "ts": "2026-09-15T10:16:17.994832+00:00"}
+2026-09-15 15:46:18,571  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s4_assert_result", "result": {"step_id": "s4_assert_result", "action": "assert", "success": true}, "ts": "2026-09-15T10:16:18.571229+00:00"}
+2026-09-15 15:46:18,572  INFO     engine.engine — [replay] {"event": "extracting_outputs", "ts": "2026-09-15T10:16:18.572209+00:00"}
+2026-09-15 15:46:18,588  INFO     engine.extractor — [extractor] field=balance raw='$4521.00'
+2026-09-15 15:46:18,588  INFO     engine.engine — [replay] {"event": "output_extracted", "field": "balance", "value": "4521.0", "ts": "2026-09-15T10:16:18.588758+00:00"}
+2026-09-15 15:46:18,606  INFO     engine.extractor — [extractor] field=account_status raw='Active'
+2026-09-15 15:46:18,607  INFO     engine.engine — [replay] {"event": "output_extracted", "field": "account_status", "value": "Active", "ts": "2026-09-15T10:16:18.606760+00:00"}
+2026-09-15 15:46:18,622  INFO     engine.extractor — [extractor] field=member_name value=[REDACTED]
+2026-09-15 15:46:18,622  INFO     engine.engine — [replay] {"event": "output_extracted", "field": "member_name", "value": "Alice Johnson", "ts": "2026-09-15T10:16:18.622941+00:00"}
+2026-09-15 15:46:18,687  INFO     engine.engine — [replay] {"event": "replay_complete", "outputs": {"balance": 4521.0, "account_status": "Active", "member_name": "Alice Johnson"}, "steps": 4, "ts": "2026-09-15T10:16:18.687910+00:00"}
+2026-09-15 15:47:08,760  INFO     engine.engine — [replay] {"event": "replay_start", "capability": "check_member_balance", "params": {"member_id": "000000"}, "ts": "2026-09-15T10:17:08.760217+00:00"}
+2026-09-15 15:47:09,562  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s1_navigate", "action": "navigate", "url": "about:blank", "ts": "2026-09-15T10:17:09.562893+00:00"}
+2026-09-15 15:47:10,965  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s1_navigate", "result": {"step_id": "s1_navigate", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "checkpoint_passed": true}, "ts": "2026-09-15T10:17:10.965144+00:00"}
+2026-09-15 15:47:10,966  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s2_type_id", "action": "type", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:17:10.966155+00:00"}
+2026-09-15 15:47:11,372  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s2_type_id", "result": {"step_id": "s2_type_id", "action": "type", "success": true, "strategy_used": "aria-label", "typed": "000000"}, "ts": "2026-09-15T10:17:11.372994+00:00"}
+2026-09-15 15:47:11,372  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s3_click_search", "action": "click", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:17:11.372994+00:00"}
+2026-09-15 15:47:12,580  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s3_click_search", "result": {"step_id": "s3_click_search", "action": "click", "success": true, "strategy_used": "css", "checkpoint_passed": true}, "ts": "2026-09-15T10:17:12.579421+00:00"}
+2026-09-15 15:47:12,580  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s4_assert_result", "action": "assert", "url": "http://localhost:8080/member/000000", "ts": "2026-09-15T10:17:12.580474+00:00"}
+2026-09-15 15:47:12,636  INFO     engine.engine — [replay] {"event": "business_outcome_detected", "outcome": "No record found for Member ID: 000000.\nPlease verify the ID and try again, or contact your supervisor.", "ts": "2026-09-15T10:17:12.636038+00:00"}
+2026-09-15 15:48:11,603  INFO     engine.engine — [replay] {"event": "replay_start", "capability": "check_member_balance", "params": {"member_id": "100001"}, "ts": "2026-09-15T10:18:11.603240+00:00"}
+2026-09-15 15:48:12,412  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s1_navigate", "action": "navigate", "url": "about:blank", "ts": "2026-09-15T10:18:12.412759+00:00"}
+2026-09-15 15:48:13,827  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s1_navigate", "result": {"step_id": "s1_navigate", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "checkpoint_passed": true}, "ts": "2026-09-15T10:18:13.827548+00:00"}
+2026-09-15 15:48:13,828  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s2_type_id", "action": "type", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:18:13.828554+00:00"}
+2026-09-15 15:48:14,237  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s2_type_id", "result": {"step_id": "s2_type_id", "action": "type", "success": true, "strategy_used": "aria-label", "typed": "100001"}, "ts": "2026-09-15T10:18:14.237489+00:00"}
+2026-09-15 15:48:14,238  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s3_click_search", "action": "click", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:18:14.238490+00:00"}
+2026-09-15 15:48:24,266  WARNING  engine.executor — [executor] Step s3_click_search failed: All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_label("__also_broken__").first to be visible
+
+2026-09-15 15:48:24,266  INFO     engine.engine — [replay] {"event": "step_retry", "step_id": "s3_click_search", "attempt": 1, "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n", "ts": "2026-09-15T10:18:24.266304+00:00"}
+2026-09-15 15:48:35,323  WARNING  engine.executor — [executor] Step s3_click_search failed: All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_label("__also_broken__").first to be visible
+
+2026-09-15 15:48:35,324  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s3_click_search", "result": {"step_id": "s3_click_search", "action": "click", "success": false, "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n"}, "ts": "2026-09-15T10:18:35.324617+00:00"}
+2026-09-15 15:48:35,998  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\failure_s3_click_search.png
+2026-09-15 15:48:36,001  INFO     engine.engine — [replay] {"event": "step_failed", "step_id": "s3_click_search", "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n", "screenshot": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\src\\..\\evidence\\screenshots\\failure_s3_click_search.png", "ts": "2026-09-15T10:18:36.001350+00:00"}
+2026-09-15 15:48:36,112  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\HITL_20260915_101836_001_annotated.png
+2026-09-15 15:48:36,116  WARNING  hitl.controller — [hitl] Intervention HITL_20260915_101836_001 saved
+2026-09-15 15:48:36,119  INFO     engine.engine — [replay] {"event": "hitl_resolved", "step_id": "s3_click_search", "url_after": "http://localhost:8080/search", "ts": "2026-09-15T10:18:36.119468+00:00"}
+2026-09-15 15:48:36,120  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s4_assert_result", "action": "assert", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:18:36.120469+00:00"}
+2026-09-15 15:48:36,160  WARNING  engine.executor — [executor] Step s4_assert_result failed: None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search
+2026-09-15 15:48:36,161  INFO     engine.engine — [replay] {"event": "step_retry", "step_id": "s4_assert_result", "attempt": 1, "error": "None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search", "ts": "2026-09-15T10:18:36.161588+00:00"}
+2026-09-15 15:48:37,192  WARNING  engine.executor — [executor] Step s4_assert_result failed: None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search
+2026-09-15 15:48:37,192  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s4_assert_result", "result": {"step_id": "s4_assert_result", "action": "assert", "success": false, "error": "None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search"}, "ts": "2026-09-15T10:18:37.192986+00:00"}
+2026-09-15 15:48:37,286  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\failure_s4_assert_result.png
+2026-09-15 15:48:37,289  INFO     engine.engine — [replay] {"event": "step_failed", "step_id": "s4_assert_result", "error": "None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search", "screenshot": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\src\\..\\evidence\\screenshots\\failure_s4_assert_result.png", "ts": "2026-09-15T10:18:37.289737+00:00"}
+2026-09-15 15:48:37,393  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\HITL_20260915_101837_002_annotated.png
+2026-09-15 15:48:37,397  WARNING  hitl.controller — [hitl] Intervention HITL_20260915_101837_002 saved
+2026-09-15 15:48:37,399  INFO     engine.engine — [replay] {"event": "hitl_resolved", "step_id": "s4_assert_result", "url_after": "http://localhost:8080/search", "ts": "2026-09-15T10:18:37.399504+00:00"}
+2026-09-15 15:48:37,399  INFO     engine.engine — [replay] {"event": "extracting_outputs", "ts": "2026-09-15T10:18:37.399504+00:00"}
+2026-09-15 15:48:47,430  INFO     engine.engine — [replay] {"event": "output_extraction_failed", "field": "balance", "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"//span[contains(@class,'balance')]\").first to be visible\n", "ts": "2026-09-15T10:18:47.430577+00:00"}
+2026-09-15 15:48:57,457  INFO     engine.engine — [replay] {"event": "output_extraction_failed", "field": "account_status", "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"//span[contains(@class,'status-')]\").first to be visible\n", "ts": "2026-09-15T10:18:57.457142+00:00"}
+2026-09-15 15:49:02,467  INFO     engine.engine — [replay] {"event": "output_extraction_failed", "field": "member_name", "error": "All 1 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"//td[text()='Full Name']/following-sibling::td\").first to be visible\n", "ts": "2026-09-15T10:19:02.467388+00:00"}
+2026-09-15 15:49:02,517  INFO     engine.engine — [replay] {"event": "replay_complete", "outputs": {"balance": null, "account_status": null, "member_name": null}, "steps": 4, "ts": "2026-09-15T10:19:02.517139+00:00"}
+2026-09-15 15:50:22,562  INFO     engine.engine — [replay] {"event": "replay_start", "capability": "check_member_balance", "params": {"member_id": "100001"}, "ts": "2026-09-15T10:20:22.562438+00:00"}
+2026-09-15 15:50:23,416  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s1_navigate", "action": "navigate", "url": "about:blank", "ts": "2026-09-15T10:20:23.416008+00:00"}
+2026-09-15 15:50:24,823  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s1_navigate", "result": {"step_id": "s1_navigate", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "checkpoint_passed": true}, "ts": "2026-09-15T10:20:24.823502+00:00"}
+2026-09-15 15:50:24,823  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s2_type_id", "action": "type", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:20:24.823502+00:00"}
+2026-09-15 15:50:25,242  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s2_type_id", "result": {"step_id": "s2_type_id", "action": "type", "success": true, "strategy_used": "aria-label", "typed": "100001"}, "ts": "2026-09-15T10:20:25.242911+00:00"}
+2026-09-15 15:50:25,244  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s3_click_search", "action": "click", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:20:25.244261+00:00"}
+2026-09-15 15:50:35,265  WARNING  engine.executor — [executor] Step s3_click_search failed: All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_label("__also_broken__").first to be visible
+
+2026-09-15 15:50:35,266  INFO     engine.engine — [replay] {"event": "step_retry", "step_id": "s3_click_search", "attempt": 1, "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n", "ts": "2026-09-15T10:20:35.266338+00:00"}
+2026-09-15 15:50:46,311  WARNING  engine.executor — [executor] Step s3_click_search failed: All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_label("__also_broken__").first to be visible
+
+2026-09-15 15:50:46,311  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s3_click_search", "result": {"step_id": "s3_click_search", "action": "click", "success": false, "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n"}, "ts": "2026-09-15T10:20:46.311787+00:00"}
+2026-09-15 15:50:46,602  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\failure_s3_click_search.png
+2026-09-15 15:50:46,604  INFO     engine.engine — [replay] {"event": "step_failed", "step_id": "s3_click_search", "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n", "screenshot": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\src\\..\\evidence\\screenshots\\failure_s3_click_search.png", "ts": "2026-09-15T10:20:46.604175+00:00"}
+2026-09-15 15:50:46,681  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\HITL_20260915_102046_001_annotated.png
+2026-09-15 15:50:46,686  WARNING  hitl.controller — [hitl] Intervention HITL_20260915_102046_001 saved
+2026-09-15 15:51:17,430  INFO     hitl.controller — [hitl] HITL_20260915_102046_001 resolved in 30.7s
+2026-09-15 15:51:17,431  INFO     engine.engine — [replay] {"event": "hitl_resolved", "step_id": "s3_click_search", "url_after": "http://localhost:8080/search", "ts": "2026-09-15T10:21:17.431729+00:00"}
+2026-09-15 15:51:17,431  INFO     engine.engine — [replay] {"event": "step_start", "step_id": "s4_assert_result", "action": "assert", "url": "http://localhost:8080/search", "ts": "2026-09-15T10:21:17.431729+00:00"}
+2026-09-15 15:51:17,466  WARNING  engine.executor — [executor] Step s4_assert_result failed: None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search
+2026-09-15 15:51:17,466  INFO     engine.engine — [replay] {"event": "step_retry", "step_id": "s4_assert_result", "attempt": 1, "error": "None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search", "ts": "2026-09-15T10:21:17.466217+00:00"}
+2026-09-15 15:51:18,489  WARNING  engine.executor — [executor] Step s4_assert_result failed: None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search
+2026-09-15 15:51:18,489  INFO     engine.engine — [replay] {"event": "step_done", "step_id": "s4_assert_result", "result": {"step_id": "s4_assert_result", "action": "assert", "success": false, "error": "None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search"}, "ts": "2026-09-15T10:21:18.489442+00:00"}
+2026-09-15 15:51:18,584  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\failure_s4_assert_result.png
+2026-09-15 15:51:18,586  INFO     engine.engine — [replay] {"event": "step_failed", "step_id": "s4_assert_result", "error": "None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search", "screenshot": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\src\\..\\evidence\\screenshots\\failure_s4_assert_result.png", "ts": "2026-09-15T10:21:18.586920+00:00"}
+2026-09-15 15:51:18,714  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\src\..\evidence\screenshots\HITL_20260915_102118_002_annotated.png
+2026-09-15 15:51:18,725  WARNING  hitl.controller — [hitl] Intervention HITL_20260915_102118_002 saved
+2026-09-15 15:51:34,433  INFO     hitl.controller — [hitl] HITL_20260915_102118_002 resolved in 15.7s
+2026-09-15 15:51:34,433  INFO     engine.engine — [replay] {"event": "hitl_resolved", "step_id": "s4_assert_result", "url_after": "http://localhost:8080/search", "ts": "2026-09-15T10:21:34.433777+00:00"}
+2026-09-15 15:51:34,433  INFO     engine.engine — [replay] {"event": "extracting_outputs", "ts": "2026-09-15T10:21:34.433777+00:00"}
+2026-09-15 15:51:44,458  INFO     engine.engine — [replay] {"event": "output_extraction_failed", "field": "balance", "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"//span[contains(@class,'balance')]\").first to be visible\n", "ts": "2026-09-15T10:21:44.458476+00:00"}
+2026-09-15 15:51:54,472  INFO     engine.engine — [replay] {"event": "output_extraction_failed", "field": "account_status", "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"//span[contains(@class,'status-')]\").first to be visible\n", "ts": "2026-09-15T10:21:54.472761+00:00"}
+2026-09-15 15:51:59,482  INFO     engine.engine — [replay] {"event": "output_extraction_failed", "field": "member_name", "error": "All 1 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"//td[text()='Full Name']/following-sibling::td\").first to be visible\n", "ts": "2026-09-15T10:21:59.482463+00:00"}
+2026-09-15 15:51:59,528  INFO     engine.engine — [replay] {"event": "replay_complete", "outputs": {"balance": null, "account_status": null, "member_name": null}, "steps": 4, "ts": "2026-09-15T10:21:59.528612+00:00"}
+2026-09-16 02:05:21,743  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.1.8:8080
+2026-09-16 02:05:21,745  INFO     werkzeug — Press CTRL+C to quit
+2026-09-16 02:05:23,192  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-09-16 02:05:23,193  INFO     werkzeug — Press CTRL+C to quit
+2026-09-16 02:05:26,121  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:26] "GET / HTTP/1.1" 200 -
+2026-09-16 02:05:27,832  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:27] "GET /favicon.ico HTTP/1.1" 404 -
+2026-09-16 02:05:29,828  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:29] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:05:29,830  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:29] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:05:41,313  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:41] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:05:41,314  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:41] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:05:46,906  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:46] "GET /api/audit-log HTTP/1.1" 200 -
+2026-09-16 02:05:46,907  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:46] "GET /api/audit-log HTTP/1.1" 200 -
+2026-09-16 02:05:53,307  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:53] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:05:53,315  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:05:53] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:06:04,987  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:04] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:06:04,989  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:04] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:06:07,291  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:07] "GET /api/member/100002 HTTP/1.1" 200 -
+2026-09-16 02:06:07,297  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:07] "POST /api/chat HTTP/1.1" 200 -
+2026-09-16 02:06:09,140  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:09] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:10,655  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:10] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:12,483  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:12] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:13,736  ERROR    bank_app — Exception on /search [GET]
+Traceback (most recent call last):
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\src\target_app\app.py", line 22, in search
+    return render_template("search.html")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\flask\templating.py", line 150, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\jinja2\environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\jinja2\environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\jinja2\environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\flask\templating.py", line 66, in get_source
+    return self._get_source_fast(environment, template)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Documents\vs code\Interface AI\interface-ai\venv\Lib\site-packages\flask\templating.py", line 100, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: search.html
+2026-09-16 02:06:13,854  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:13] "GET /search HTTP/1.1" 500 -
+2026-09-16 02:06:14,000  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:14] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:15,546  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:15] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:17,059  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:17] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:17,290  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:17] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:06:17,291  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:17] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:06:18,879  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:18] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:20,391  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:20] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:22,213  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:22] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:24,020  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:24] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:26,319  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:26] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:28,332  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:28] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:29,018  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:29] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:06:29,019  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:29] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:06:30,314  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:30] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:32,018  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:32] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:34,327  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:34] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:35,010  WARNING  engine.executor — [executor] Step s2_type_id failed: All 4 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for locator("input[type='text']:first-of-type").first to be visible
+
+2026-09-16 02:06:36,015  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:36] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:38,322  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:38] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:40,325  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:40] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:41,025  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:41] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:06:41,027  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:41] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:06:42,320  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:42] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:44,007  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:44] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:45,834  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:45] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:47,354  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:47] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:49,324  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:49] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:51,014  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:51] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:53,332  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:53] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:53,346  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:53] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:06:53,347  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:53] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:06:55,331  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:55] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:56,079  WARNING  engine.executor — [executor] Step s2_type_id failed: All 4 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for locator("input[type='text']:first-of-type").first to be visible
+
+2026-09-16 02:06:57,020  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:57] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:06:59,328  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:06:59] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:01,012  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:01] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:03,326  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:03] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:05,011  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:05] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:05,335  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:05] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:07:05,337  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:05] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:07:07,327  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:07] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:09,013  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:09] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:11,320  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:11] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:12,830  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:12] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:14,659  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:14] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:16,985  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:16] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:07:16,988  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:16] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:07:17,139  WARNING  engine.executor — [executor] Step s2_type_id failed: All 4 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for locator("input[type='text']:first-of-type").first to be visible
+
+2026-09-16 02:07:17,390  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:17] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:19,011  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:19] "GET /api/job/14bab78d-102f-4dc1-a240-094fc82e9d2d HTTP/1.1" 200 -
+2026-09-16 02:07:29,355  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:29] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:07:29,356  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:07:29] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:14:14,088  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.1.8:8080
+2026-09-16 02:14:14,090  INFO     werkzeug — Press CTRL+C to quit
+2026-09-16 02:14:15,436  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-09-16 02:14:15,437  INFO     werkzeug — Press CTRL+C to quit
+2026-09-16 02:14:18,062  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:18] "GET / HTTP/1.1" 200 -
+2026-09-16 02:14:21,735  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:14:21,738  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:14:24,444  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:24] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:14:24,447  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:24] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:14:31,395  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:31] "GET /api/member/100002 HTTP/1.1" 200 -
+2026-09-16 02:14:31,407  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:31] "POST /api/chat HTTP/1.1" 200 -
+2026-09-16 02:14:32,950  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:32] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:14:32,952  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:32] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:14:33,161  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:33] "GET /search HTTP/1.1" 200 -
+2026-09-16 02:14:33,244  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:33] "GET /api/job/a5f0287e-58f1-4efa-84a3-60acfd3cc300 HTTP/1.1" 200 -
+2026-09-16 02:14:34,812  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:34] "POST /search HTTP/1.1" 302 -
+2026-09-16 02:14:35,071  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:35] "GET /api/job/a5f0287e-58f1-4efa-84a3-60acfd3cc300 HTTP/1.1" 200 -
+2026-09-16 02:14:35,144  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:35] "GET /member/100002 HTTP/1.1" 200 -
+2026-09-16 02:14:36,579  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:36] "GET /api/job/a5f0287e-58f1-4efa-84a3-60acfd3cc300 HTTP/1.1" 200 -
+2026-09-16 02:14:38,402  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:38] "GET /api/job/a5f0287e-58f1-4efa-84a3-60acfd3cc300 HTTP/1.1" 200 -
+2026-09-16 02:14:44,950  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:44] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:14:44,951  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:44] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:14:49,108  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:49] "GET /api/audit-log HTTP/1.1" 200 -
+2026-09-16 02:14:49,109  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:49] "GET /api/audit-log HTTP/1.1" 200 -
+2026-09-16 02:14:56,950  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:56] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:14:56,952  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:14:56] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:15:09,279  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:15:09,280  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:15:21,031  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:15:21,032  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:15:33,342  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:15:33,344  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:15:45,039  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:45] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:15:45,040  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:45] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:15:57,333  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:15:57,334  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:15:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:16:09,023  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:16:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:16:09,024  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:16:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:16:36,345  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:16:36] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:16:36,346  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:16:36] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:17:36,033  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:17:36] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:17:36,034  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:17:36] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:18:21,964  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:18:21,965  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:18:32,968  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:32] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:18:32,969  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:32] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:18:45,334  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:45] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:18:45,338  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:45] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:18:57,044  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:18:57,045  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:18:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:19:09,122  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:09] "GET /api/member/100003 HTTP/1.1" 200 -
+2026-09-16 02:19:09,128  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:09] "POST /api/chat HTTP/1.1" 200 -
+2026-09-16 02:19:09,262  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:19:09,264  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:19:10,650  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:10] "GET /api/job/37363a8b-aef1-42ef-943a-c46721043bd0 HTTP/1.1" 200 -
+2026-09-16 02:19:10,796  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:10] "GET /search HTTP/1.1" 200 -
+2026-09-16 02:19:12,443  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:12] "POST /search HTTP/1.1" 302 -
+2026-09-16 02:19:12,477  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:12] "GET /api/job/37363a8b-aef1-42ef-943a-c46721043bd0 HTTP/1.1" 200 -
+2026-09-16 02:19:12,756  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:12] "GET /member/100003 HTTP/1.1" 200 -
+2026-09-16 02:19:13,991  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:13] "GET /api/job/37363a8b-aef1-42ef-943a-c46721043bd0 HTTP/1.1" 200 -
+2026-09-16 02:19:15,816  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:15] "GET /api/job/37363a8b-aef1-42ef-943a-c46721043bd0 HTTP/1.1" 200 -
+2026-09-16 02:19:20,951  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:20] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:19:20,952  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:20] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:19:33,342  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:19:33,344  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:19:44,944  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:44] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:19:44,945  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:44] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:19:45,864  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:45] "GET /api/member/100003 HTTP/1.1" 200 -
+2026-09-16 02:19:47,882  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:47] "GET /api/member/100003 HTTP/1.1" 200 -
+2026-09-16 02:19:47,884  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:47] "POST /api/chat HTTP/1.1" 200 -
+2026-09-16 02:19:57,270  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:19:57,271  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:19:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:20:08,951  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:08] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:20:08,952  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:08] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:20:12,941  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:12] "GET /api/member/100003 HTTP/1.1" 200 -
+2026-09-16 02:20:14,953  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:14] "GET /api/member/100003 HTTP/1.1" 200 -
+2026-09-16 02:20:14,955  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:14] "POST /api/chat HTTP/1.1" 200 -
+2026-09-16 02:20:16,273  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:16] "GET /member/100003/update HTTP/1.1" 200 -
+2026-09-16 02:20:16,475  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:16] "GET /api/job/8dd1e539-6b4f-475f-a868-32058d29d7c7 HTTP/1.1" 200 -
+2026-09-16 02:20:18,238  WARNING  guardrails — [GUARDRAIL] Step 's4_click_update' is irreversible — flagged.
+2026-09-16 02:20:18,311  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:18] "GET /api/job/8dd1e539-6b4f-475f-a868-32058d29d7c7 HTTP/1.1" 200 -
+2026-09-16 02:20:18,951  WARNING  guardrails — [GUARDRAIL] Step 's5_confirm_modal' is irreversible — flagged.
+2026-09-16 02:20:19,004  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:19] "POST /member/100003/confirm-update HTTP/1.1" 200 -
+2026-09-16 02:20:20,135  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:20] "GET /api/job/8dd1e539-6b4f-475f-a868-32058d29d7c7 HTTP/1.1" 200 -
+2026-09-16 02:20:20,998  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:20] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:20:21,016  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:20:22,190  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:22] "GET /api/job/8dd1e539-6b4f-475f-a868-32058d29d7c7 HTTP/1.1" 200 -
+2026-09-16 02:20:31,833  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:31] "GET /api/audit-log HTTP/1.1" 200 -
+2026-09-16 02:20:31,835  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:31] "GET /api/audit-log HTTP/1.1" 200 -
+2026-09-16 02:20:33,267  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:20:33,268  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:20:45,284  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:45] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:20:45,286  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:45] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:20:56,948  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:56] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:20:56,949  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:20:56] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:21:09,325  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:21:09,326  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:21:20,959  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:20] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:21:20,960  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:20] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:21:33,259  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:21:33,260  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:21:44,966  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:44] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:21:44,967  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:44] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:21:57,271  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:21:57,273  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:21:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:22:08,951  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:08] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:22:08,954  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:08] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:22:21,278  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:22:21,279  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:22:32,962  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:32] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:22:32,964  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:32] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:22:45,358  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:45] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:22:45,359  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:45] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:22:57,034  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:22:57,035  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:22:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:23:09,349  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:23:09,350  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:23:21,020  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:23:21,021  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:23:33,260  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:23:33,262  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:23:44,948  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:44] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:23:44,949  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:44] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:23:57,333  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:23:57,334  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:23:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:24:09,029  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:24:09,030  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:24:21,347  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:24:21,348  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:24:33,040  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:24:33,042  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:24:45,357  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:45] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:24:45,359  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:24:45] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:25:36,038  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:25:36] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:25:36,040  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:25:36] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:26:36,338  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:26:36] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:26:36,340  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:26:36] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:27:24,290  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:24] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:27:24,295  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:24] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:27:33,343  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:27:33,346  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:27:45,038  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:45] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:27:45,040  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:45] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:27:57,341  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:27:57,342  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:27:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:28:09,018  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:28:09,019  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:28:21,340  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:28:21,341  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:28:36,031  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:36] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:28:36,032  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:36] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:28:57,669  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:28:57,669  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:28:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:29:09,040  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:09] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:29:09,041  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:09] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:29:21,349  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:21] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:29:21,350  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:21] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:29:33,023  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:33] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:29:33,024  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:33] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:29:45,354  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:45] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:29:45,355  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:45] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:29:57,047  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:57] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:29:57,048  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:29:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-16 02:30:36,340  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:30:36] "GET /health HTTP/1.1" 200 -
+2026-09-16 02:30:36,343  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:30:36] "GET /api/health-proxy HTTP/1.1" 200 -

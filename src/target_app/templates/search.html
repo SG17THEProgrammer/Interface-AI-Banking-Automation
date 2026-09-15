@@ -30,13 +30,13 @@
             {% if error %}
             <div class="error">{{ error }}</div>
             {% endif %}
-            <!-- No id/test attributes on form elements - simulates legacy markup -->
             <form method="POST" action="/search">
                 <table>
                     <tr>
                         <td class="label">Member ID Number:</td>
                         <td>
-                            <input type="text" name="member_id" placeholder="Enter 6-digit Member ID" style="width:200px;padding:3px;font-size:13px;" aria-label="Member ID" />
+                            <input type="text" name="member_id" placeholder="Enter 6-digit Member ID"
+                                   style="width:200px;padding:3px;font-size:13px;" aria-label="Member ID" />
                         </td>
                     </tr>
                     <tr>

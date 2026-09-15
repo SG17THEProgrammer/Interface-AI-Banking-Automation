@@ -2,7 +2,7 @@
 Discovery Agent — LLM-Driven Automation Loop (Groq backend)
 -------------------------------------------------------------
 Uses Groq's OpenAI-compatible API with tool-use (function calling).
-Model: openai/gpt-oss-20b (supports parallel tool calls, fast, free tier)
+Model: openai/gpt-oss-safeguard-20b (supports parallel tool calls, fast, free tier)
 
 Get a free API key at: https://console.groq.com
 Set it with: set GROQ_API_KEY=gsk_...

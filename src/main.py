@@ -1,372 +1,376 @@
 """
-Main Orchestrator — Single Entry Point
-----------------------------------------
-Run this file to execute the complete system:
-  1. Start the mock target app (if not already running)
-  2. Run LLM discovery → produces capability_artifact.json + discovery_run.log
-  3. Run deterministic replay (success case) → replay_success.log
-  4. Run deterministic replay (failure/business-outcome case) → replay_failure.log
-  5. Print a summary report
+main.py — Single entry point.
+
+Modes:
+  chat          Start banking app (8080) + chat UI (5000). Open http://localhost:5000
+  replay        Run deterministic engine for one member (no LLM, no UI).
+  demo          Run the full automated test suite and print results.
+  server        Start only the banking app on port 8080.
+  hitl-test     Force a HITL escalation to demonstrate the flow.
 
 Usage:
-    python main.py --mode all                    # full end-to-end run
-    python main.py --mode discovery              # only run discovery
-    python main.py --mode replay                 # only run replay (needs artifact)
-    python main.py --mode replay --member 999999 # replay with specific member
-    python main.py --mode server                 # only start the target app
+  python main.py                          # chat mode (default)
+  python main.py --mode replay --member 100002
+  python main.py --mode demo
+  python main.py --mode server
+  python main.py --mode hitl-test --auto
 """
 
 from __future__ import annotations
 import argparse
+import importlib.util
 import json
 import logging
 import os
-import subprocess
+import socket
 import sys
-import time
 import threading
-from dotenv import load_dotenv
+import time
 
-load_dotenv()
+# ── Paths ──────────────────────────────────────────────────────────────────
+_SRC           = os.path.dirname(os.path.abspath(__file__))
+TARGET_APP_DIR = os.path.join(_SRC, "target_app")
+UI_DIR         = os.path.join(_SRC, "ui")
+EVIDENCE_DIR   = os.path.join(_SRC, "..", "evidence")
+TARGET_URL     = "http://localhost:8080"
 
-# ── Make src/ importable ──────────────────────────────────────────────────
-sys.path.insert(0, os.path.dirname(__file__))
+# ── sys.path ───────────────────────────────────────────────────────────────
+# Both _SRC and TARGET_APP_DIR must be on the path before any local imports.
+for _p in [_SRC, TARGET_APP_DIR]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from artifact import CapabilityArtifact, build_check_balance_artifact
-from discovery import DiscoveryAgent
-from replay import ReplayEngine, ReplayResult
+# ── Local imports (after path setup) ──────────────────────────────────────
+import capabilities.check_balance as cap_check_balance
+import capabilities.update_status as cap_update_status
+from engine.engine import ReplayEngine, ReplayResult
 
-# ── Logging setup ─────────────────────────────────────────────────────────
-_evidence_dir_for_log = os.path.join(os.path.dirname(__file__), "..", "evidence")
-os.makedirs(_evidence_dir_for_log, exist_ok=True)
+# ── Evidence dirs ──────────────────────────────────────────────────────────
+for _d in [EVIDENCE_DIR,
+           os.path.join(EVIDENCE_DIR, "screenshots"),
+           os.path.join(EVIDENCE_DIR, "interventions")]:
+    os.makedirs(_d, exist_ok=True)
+
+# ── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format="%(asctime)s  %(levelname)-7s  %(name)s — %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(
-            os.path.join(_evidence_dir_for_log, "run.log"), mode="a"
-        ),
+        logging.FileHandler(os.path.join(EVIDENCE_DIR, "run.log"), mode="a"),
     ],
 )
 logger = logging.getLogger("main")
 
-# ── Config ────────────────────────────────────────────────────────────────
-TARGET_URL     = "http://localhost:8080"
-EVIDENCE_DIR   = os.path.join(os.path.dirname(__file__), "..", "evidence")
-ARTIFACT_PATH  = os.path.join(EVIDENCE_DIR, "capability_artifact.json")
-DEFAULT_MEMBER = "100001"   # Alice Johnson — happy path
-MISSING_MEMBER = "000000"   # Does not exist — business outcome test
-TARGET_APP_DIR = os.path.join(os.path.dirname(__file__), "target_app")
+
+# ══════════════════════════════════════════════════════════════════════════
+# Server helpers
+# ══════════════════════════════════════════════════════════════════════════
+
+def _is_port_open(port: int) -> bool:
+    s = socket.socket()
+    s.settimeout(0.5)
+    result = s.connect_ex(("127.0.0.1", port)) == 0
+    s.close()
+    return result
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────
+def _load_flask_app(module_name: str, file_path: str, extra_paths: list[str] = None):
+    """
+    Load a Flask app from an absolute file path via importlib.
+    Inserts extra_paths into sys.path first so relative imports inside
+    the module (e.g. 'from database import ...') resolve correctly.
+    """
+    for p in (extra_paths or []):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    mod  = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
-def ensure_evidence_dir():
-    os.makedirs(EVIDENCE_DIR, exist_ok=True)
-    os.makedirs(os.path.join(EVIDENCE_DIR, "screenshots"), exist_ok=True)
+
+def _start_banking_app():
+    """Load and run the banking Flask app in this thread (call from a daemon thread)."""
+    mod = _load_flask_app(
+        "bank_app",
+        os.path.join(TARGET_APP_DIR, "app.py"),
+        extra_paths=[TARGET_APP_DIR],   # so 'from database import ...' works
+    )
+    mod.app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False)
 
 
-def print_banner(text: str):
-    width = 70
-    print("\n" + "═" * width)
-    print(f"  {text}")
-    print("═" * width)
+def _start_chat_app():
+    """Load and run the chat Flask app in this thread (call from a daemon thread)."""
+    mod = _load_flask_app(
+        "chat_app",
+        os.path.join(UI_DIR, "chat_app.py"),
+        extra_paths=[_SRC],             # so 'from capabilities import ...' works
+    )
+    mod.app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+
+def _ensure_server(port: int, target_fn, label: str, wait_s: int = 12):
+    """Start target_fn in a daemon thread if port isn't already open."""
+    if _is_port_open(port):
+        print(f"  ✅  {label} already running on port {port}")
+        return
+    print(f"  ⏳  Starting {label} on port {port} …")
+    t = threading.Thread(target=target_fn, daemon=True, name=label)
+    t.start()
+    for _ in range(wait_s * 2):
+        time.sleep(0.5)
+        if _is_port_open(port):
+            print(f"  ✅  {label} ready")
+            return
+    print(f"  ⚠️   {label} did not start on port {port}. Is the port free?")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Shared utilities
+# ══════════════════════════════════════════════════════════════════════════
+
+def _patch_update_navigate(artifact, member_id: str):
+    for step in artifact.steps:
+        if step.action == "navigate" and step.input_value and "{member_id}" in step.input_value:
+            step.input_value = step.input_value.replace("{member_id}", member_id)
+            step.input_var   = None
+            break
+
+
+def sep(title: str = ""):
+    w = 68
+    print("\n" + "─" * w)
+    if title:
+        print(f"  {title}")
+        print("─" * w)
 
 
 def print_result(label: str, result: ReplayResult):
-    icon = "✅" if result.success else ("⚑ " if result.outcome_type == "business_outcome" else "❌")
+    icons = {"success": "✅", "business_outcome": "⚑ ", "hard_failure": "❌"}
+    icon  = icons.get(result.outcome_type, "?")
     print(f"\n{icon}  {label}")
-    print(f"   Outcome type  : {result.outcome_type}")
-    print(f"   Steps done    : {result.steps_completed}")
-    print(f"   Duration      : {result.duration_seconds:.2f}s")
-    print(f"   Retries used  : {result.retries_used}")
-    if result.outputs:
-        print(f"   Outputs       :")
-        for k, v in result.outputs.items():
-            print(f"     {k}: {v}")
+    print(f"   Outcome  : {result.outcome_type}")
+    print(f"   Steps    : {result.steps_completed}   "
+          f"Duration: {result.duration_seconds:.1f}s   "
+          f"Retries: {result.retries_used}")
+    for k, v in (result.outputs or {}).items():
+        print(f"   {k}: {v}")
     if result.business_outcome:
-        print(f"   Business msg  : {result.business_outcome}")
+        print(f"   Message  : {result.business_outcome[:120]}")
     if result.error:
-        print(f"   Error         : {result.error}")
+        print(f"   Error    : {result.error[:120]}")
     if result.failed_step_id:
-        print(f"   Failed step   : {result.failed_step_id}")
-    if result.screenshot_path:
-        print(f"   Screenshot    : {result.screenshot_path}")
+        print(f"   At step  : {result.failed_step_id}")
 
 
-def wait_for_server(url: str, timeout: int = 15) -> bool:
-    """Poll the target app's /health endpoint until it responds."""
-    import urllib.request
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            with urllib.request.urlopen(f"{url}/health", timeout=2) as resp:
-                if resp.status == 200:
-                    return True
-        except Exception:
-            pass
+def _list_evidence():
+    for root, _, files in os.walk(EVIDENCE_DIR):
+        for f in sorted(files):
+            full = os.path.join(root, f)
+            rel  = os.path.relpath(full, EVIDENCE_DIR)
+            size = os.path.getsize(full)
+            print(f"  📄  evidence/{rel}  ({size:,} bytes)")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Modes
+# ══════════════════════════════════════════════════════════════════════════
+
+def mode_chat(args):
+    sep("MemberLink Automation System — Chat Mode")
+
+    _ensure_server(8080, _start_banking_app, "Banking app")
+    _ensure_server(5000, _start_chat_app,    "Chat UI")
+
+    print()
+    print("  ┌─────────────────────────────────────────────┐")
+    print("  │  Open  http://localhost:5000  in Chrome     │")
+    print("  └─────────────────────────────────────────────┘")
+    print()
+    print("  Banking app : http://localhost:8080")
+    print("  Chat UI     : http://localhost:5000")
+    print("  Press Ctrl+C to stop.\n")
+
+    try:
+        import webbrowser
         time.sleep(0.5)
-    return False
+        webbrowser.open("http://localhost:5000")
+    except Exception:
+        pass
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n  Shutting down. Goodbye.")
 
 
-def start_target_app() -> subprocess.Popen:
-    """Start the Flask mock app in a subprocess."""
-    print_banner("Starting mock banking app on http://localhost:8080")
-    env = os.environ.copy()
-    env["FLASK_ENV"] = "production"
-    proc = subprocess.Popen(
-        [sys.executable, "app.py"],
-        cwd=TARGET_APP_DIR,
-        env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    if wait_for_server(TARGET_URL, timeout=12):
-        print("  ✅  Mock app is up at http://localhost:8080")
-    else:
-        print("  ⚠️   Mock app may not have started. Check that port 8080 is free.")
-    return proc
+def mode_replay(args):
+    _ensure_server(8080, _start_banking_app, "Banking app")
+    time.sleep(1)
+
+    sep(f"Replay — balance lookup for member {args.member}")
+    artifact = cap_check_balance.build(TARGET_URL)
+    engine   = ReplayEngine(evidence_dir=EVIDENCE_DIR, headless=True)
+    result   = engine.run(artifact, {"member_id": args.member},
+                          log_suffix=f"member_{args.member}")
+    print_result("Balance lookup", result)
+
+    path = os.path.join(EVIDENCE_DIR, f"replay_{args.member}_summary.json")
+    with open(path, "w") as f:
+        json.dump(result.to_dict(), f, indent=2)
+    print(f"\n  Summary → {path}")
 
 
-# ── Phase runners ─────────────────────────────────────────────────────────
+def mode_demo(args):
+    _ensure_server(8080, _start_banking_app, "Banking app")
+    time.sleep(1)
 
-def run_discovery(api_key: str, headless: bool = True) -> CapabilityArtifact:
-    print_banner("Phase 1 — LLM Discovery Agent")
-    print("  Goal: 'Look up member 100001 and retrieve their current balance'")
-    print("  This will take 30–90 seconds as the LLM drives the browser...\n")
+    engine = ReplayEngine(evidence_dir=EVIDENCE_DIR, headless=True)
 
-    agent = DiscoveryAgent(
-        api_key=api_key,
+    sep("Demo 1 — Balance lookup (success): Alice / 100001")
+    art1 = cap_check_balance.build(TARGET_URL)
+    r1   = engine.run(art1, {"member_id": "100001"}, log_suffix="demo_balance_ok")
+    print_result("Balance lookup — Alice", r1)
+
+    sep("Demo 2 — Balance lookup (not found): 000000")
+    r2 = engine.run(art1, {"member_id": "000000"}, log_suffix="demo_balance_nf")
+    print_result("Balance lookup — not found", r2)
+
+    sep("Demo 3 — Account update: Freeze Carol / 100003")
+    art3 = cap_update_status.build(TARGET_URL)
+    _patch_update_navigate(art3, "100003")
+    r3 = engine.run(art3,
+                    {"member_id": "100003", "new_status": "Frozen",
+                     "reason_code": "DEMO-FREEZE"},
+                    log_suffix="demo_update_carol")
+    print_result("Update status — Carol", r3)
+
+    sep("Demo 4 — Verify persistence: re-read Carol")
+    art4 = cap_check_balance.build(TARGET_URL)
+    r4   = engine.run(art4, {"member_id": "100003"}, log_suffix="demo_verify_carol")
+    print_result("Verify Carol post-update", r4)
+
+    sep("Demo complete — evidence files")
+    _list_evidence()
+
+
+def mode_server(args):
+    sep("Banking app only — http://localhost:8080")
+    _ensure_server(8080, _start_banking_app, "Banking app")
+    print("  Press Ctrl+C to stop.\n")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n  Stopped.")
+
+
+def mode_hitl_test(args):
+    from artifact import Step, Locator
+
+    _ensure_server(8080, _start_banking_app, "Banking app")
+    time.sleep(1)
+
+    sep("HITL Escalation Demo")
+    print("  Injecting broken locators into Search button step…")
+
+    artifact = cap_check_balance.build(TARGET_URL)
+    for i, step in enumerate(artifact.steps):
+        if step.action == "click":
+            artifact.steps[i] = Step(
+                step_id=step.step_id,
+                action="click",
+                locators=[
+                    Locator("css",        "button.__hitl_broken__",    "Deliberately broken"),
+                    Locator("aria-label", "__hitl_broken_fallback__",  "Broken fallback"),
+                ],
+                description=step.description + " [HITL TEST: broken locators]",
+                checkpoint=step.checkpoint,
+                wait_after_ms=300,
+                is_reversible=step.is_reversible,
+            )
+            print(f"  ✅  Broken locators injected into: {step.step_id}")
+            break
+
+    headless = args.auto   # False by default → browser opens
+    engine   = ReplayEngine(
         evidence_dir=EVIDENCE_DIR,
         headless=headless,
-        max_steps=10,
-    )
-
-    result = agent.run(
-        goal=(
-            "Navigate to the member search page, search for member ID '100001', "
-            "and extract their current balance and account status. "
-            "If the member is not found, record that as a business outcome."
-        ),
-        target_url=TARGET_URL,
-        capability_name="check_member_balance",
-        runtime_params={"member_id": DEFAULT_MEMBER},
-    )
-
-    if result["success"]:
-        print(f"\n  ✅  Discovery complete. {result['steps_taken']} steps taken.")
-        print(f"  📄  Artifact saved: {result['artifact_path']}")
-        print(f"  📋  Run log saved : {result['log_path']}")
-    else:
-        print(f"\n  ⚠️   Discovery did not confirm goal complete after {result['steps_taken']} steps.")
-        print(f"  📄  Partial artifact saved: {result['artifact_path']}")
-
-    return result["artifact"]
-
-
-def run_replay_success(artifact: CapabilityArtifact, headless: bool = True) -> ReplayResult:
-    print_banner("Phase 2a — Deterministic Replay (Success Case)")
-    print(f"  Member: {DEFAULT_MEMBER} (Alice Johnson — active account)")
-    print("  Expected: outputs contain balance and account_status\n")
-
-    engine = ReplayEngine(
-        evidence_dir=EVIDENCE_DIR,
-        headless=headless,
+        max_retries_per_step=1,
         hitl_enabled=True,
     )
+
+    if not args.auto:
+        print()
+        print("  What will happen:")
+        print("  1. Chromium opens — you'll see the banking app search page")
+        print("  2. The bot types member ID 100001 successfully")
+        print("  3. The bot gets STUCK trying to click Search (broken locators)")
+        print("  4. This terminal shows INTERVENTION REQUIRED")
+        print("  5. You manually click Search in the browser")
+        print("  6. Press ENTER here — bot resumes and finishes")
+        print()
+        input("  Press ENTER to start… ")
+
     result = engine.run(
         artifact=artifact,
-        parameters={"member_id": DEFAULT_MEMBER},
-        log_suffix="success",
-        non_interactive=True,
+        parameters={"member_id": "100001"},
+        log_suffix="hitl_demo",
+        non_interactive=args.auto,
     )
-    print_result("Replay — success case", result)
+    print_result("HITL demo", result)
 
-    # Save result summary to evidence
-    summary_path = os.path.join(EVIDENCE_DIR, "replay_success_summary.json")
-    with open(summary_path, "w") as f:
-        json.dump(result.to_dict(), f, indent=2)
-    print(f"  📋  Summary saved : {summary_path}")
-
-    return result
-
-
-def run_replay_failure(artifact: CapabilityArtifact, headless: bool = True) -> ReplayResult:
-    print_banner("Phase 2b — Deterministic Replay (Business Outcome / Failure Case)")
-    print(f"  Member: {MISSING_MEMBER} (does not exist — should be a business outcome)")
-    print("  Expected: outcome_type='business_outcome', NOT a crash\n")
-
-    engine = ReplayEngine(
-        evidence_dir=EVIDENCE_DIR,
-        headless=headless,
-        hitl_enabled=True,
-    )
-    result = engine.run(
-        artifact=artifact,
-        parameters={"member_id": MISSING_MEMBER},
-        log_suffix="failure",
-        non_interactive=True,
-    )
-    print_result("Replay — failure/business-outcome case", result)
-
-    # Save result summary
-    summary_path = os.path.join(EVIDENCE_DIR, "replay_business_outcome_summary.json")
-    with open(summary_path, "w") as f:
-        json.dump(result.to_dict(), f, indent=2)
-    print(f"  📋  Summary saved : {summary_path}")
-
-    return result
+    iv_dir = os.path.join(EVIDENCE_DIR, "interventions")
+    if os.path.isdir(iv_dir):
+        files = sorted(f for f in os.listdir(iv_dir) if f.endswith(".json"))
+        if files:
+            with open(os.path.join(iv_dir, files[-1])) as f:
+                iv = json.load(f)
+            print(f"\n  Intervention: evidence/interventions/{files[-1]}")
+            print(f"    Stuck at  : {iv['current_step_id']}")
+            print(f"    Status    : {iv['status']}")
+            if iv.get("screenshot_path"):
+                print(f"    Screenshot: {os.path.basename(iv['screenshot_path'])}")
 
 
-def run_replay_frozen_account(artifact: CapabilityArtifact, headless: bool = True) -> ReplayResult:
-    """Bonus test: frozen account — also a business outcome variant."""
-    print_banner("Phase 2c — Replay (Frozen Account Case)")
-    print("  Member: 100003 (Carol Williams — frozen account)")
-
-    engine = ReplayEngine(evidence_dir=EVIDENCE_DIR, headless=headless)
-    result = engine.run(
-        artifact=artifact,
-        parameters={"member_id": "100003"},
-        log_suffix="frozen",
-        non_interactive=True,
-    )
-    print_result("Replay — frozen account", result)
-    return result
-
-
-# ── Argument parser ───────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════
+# Entry point
+# ══════════════════════════════════════════════════════════════════════════
 
 def parse_args():
     p = argparse.ArgumentParser(
-        description="interface.ai Computer-Use Automation System",
+        description="MemberLink Automation System",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py --mode all                     # Full end-to-end run
-  python main.py --mode discovery               # Discovery only
-  python main.py --mode replay                  # Replay only (uses saved artifact)
-  python main.py --mode replay --member 100002  # Replay for a specific member
-  python main.py --mode server                  # Start target app only
-  python main.py --mode all --visible           # Run with visible browser window
+  python main.py                             # Start chat UI at http://localhost:5000
+  python main.py --mode replay --member 100002
+  python main.py --mode demo
+  python main.py --mode server
+  python main.py --mode hitl-test --auto
+  python main.py --mode hitl-test            # browser opens for real HITL
         """,
     )
-    p.add_argument(
-        "--mode",
-        choices=["all", "discovery", "replay", "server"],
-        default="all",
-        help="Which phase to run (default: all)",
-    )
-    p.add_argument(
-        "--member",
-        default=DEFAULT_MEMBER,
-        help=f"Member ID for replay (default: {DEFAULT_MEMBER})",
-    )
-    p.add_argument(
-        "--visible",
-        action="store_true",
-        help="Show the browser window (default: headless)",
-    )
-    p.add_argument(
-        "--skip-server",
-        action="store_true",
-        help="Don't start the target app (assumes it's already running)",
-    )
-    p.add_argument(
-        "--use-prebuilt-artifact",
-        action="store_true",
-        help="Use the hand-authored artifact instead of running discovery",
-    )
+    p.add_argument("--mode",
+                   choices=["chat", "replay", "demo", "server", "hitl-test"],
+                   default="chat")
+    p.add_argument("--member", default="100001")
+    p.add_argument("--auto", action="store_true",
+                   help="Auto-resolve HITL without human input (headless)")
     return p.parse_args()
 
 
-# ── Main ──────────────────────────────────────────────────────────────────
-
 def main():
     args = parse_args()
-    ensure_evidence_dir()
-
-    # Get API key
-    api_key = os.getenv("GROQ_API_KEY", "")
-    if not api_key and args.mode in ("all", "discovery"):
-        print("\n❌  GROQ_API_KEY environment variable not set.")
-        print("   Set it with:  export GROQ_API_KEY=sk-ant-...")
-        print("   Or run replay-only with:  python main.py --mode replay --use-prebuilt-artifact")
-        sys.exit(1)
-
-    headless = not args.visible
-    server_proc = None
-
-    try:
-        # ── Start target app ──────────────────────────────────────────────
-        if args.mode == "server":
-            proc = start_target_app()
-            print("\n  Server running. Press Ctrl+C to stop.")
-            proc.wait()
-            return
-
-        if not args.skip_server:
-            server_proc = start_target_app()
-            time.sleep(1)  # Give server a moment to fully initialize
-
-        # ── Determine which artifact to use ──────────────────────────────
-        artifact = None
-
-        if args.mode in ("all", "discovery") and not args.use_prebuilt_artifact:
-            artifact = run_discovery(api_key=api_key, headless=headless)
-
-        elif args.use_prebuilt_artifact or args.mode == "replay":
-            # Try loading a previously saved artifact first
-            if os.path.exists(ARTIFACT_PATH):
-                print(f"\n  📄  Loading existing artifact: {ARTIFACT_PATH}")
-                artifact = CapabilityArtifact.load(ARTIFACT_PATH)
-            else:
-                print("\n  📄  No saved artifact found. Using hand-authored reference artifact.")
-                artifact = build_check_balance_artifact(target_url=TARGET_URL)
-                artifact.save(ARTIFACT_PATH)
-                print(f"  📄  Reference artifact saved: {ARTIFACT_PATH}")
-
-        # ── Run replay ───────────────────────────────────────────────────
-        if args.mode in ("all", "replay"):
-            if args.mode == "replay" and args.member != DEFAULT_MEMBER:
-                # Single custom replay
-                engine = ReplayEngine(evidence_dir=EVIDENCE_DIR, headless=headless)
-                result = engine.run(
-                    artifact=artifact,
-                    parameters={"member_id": args.member},
-                    log_suffix=f"member_{args.member}",
-                    non_interactive=True,
-                )
-                print_result(f"Replay for member {args.member}", result)
-            else:
-                # Standard test suite
-                run_replay_success(artifact, headless=headless)
-                run_replay_failure(artifact, headless=headless)
-                if args.mode == "all":
-                    run_replay_frozen_account(artifact, headless=headless)
-
-        # ── Final summary ────────────────────────────────────────────────
-        print_banner("Run Complete — Evidence Files")
-        evidence_files = []
-        for root, _, files in os.walk(EVIDENCE_DIR):
-            for f in sorted(files):
-                full = os.path.join(root, f)
-                rel = os.path.relpath(full, EVIDENCE_DIR)
-                size = os.path.getsize(full)
-                evidence_files.append((rel, size))
-
-        for rel, size in sorted(evidence_files):
-            print(f"  📄  evidence/{rel}  ({size:,} bytes)")
-
-        print(f"\n  All evidence saved in: {os.path.abspath(EVIDENCE_DIR)}")
-
-    except KeyboardInterrupt:
-        print("\n\nInterrupted by user.")
-    finally:
-        if server_proc and server_proc.poll() is None:
-            server_proc.terminate()
-            server_proc.wait()
-            print("  Target app stopped.")
+    {
+        "chat":      mode_chat,
+        "replay":    mode_replay,
+        "demo":      mode_demo,
+        "server":    mode_server,
+        "hitl-test": mode_hitl_test,
+    }[args.mode](args)
 
 
 if __name__ == "__main__":

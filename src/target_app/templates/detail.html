@@ -35,7 +35,6 @@
         {% if not_found %}
         <div class="panel">
             <div class="panel-title">Member Lookup Result</div>
-            <!-- This is a BUSINESS OUTCOME - not a system error -->
             <div class="not-found" id="member-not-found">
                 No record found for Member ID: <strong>{{ member_id }}</strong>.<br>
                 Please verify the ID and try again, or contact your supervisor.
@@ -70,7 +69,6 @@
                 </tr>
                 <tr>
                     <td class="label">Current Balance</td>
-                    <!-- This is what the automation needs to extract -->
                     <td class="value">
                         <span class="balance" id="balance-amount">${{ "%.2f" | format(member.balance) }}</span>
                     </td>

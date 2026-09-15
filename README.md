@@ -1,35 +1,65 @@
-# Computer-Use Automation System
-### interface.ai Assignment — Submission
+# MemberLink Automation System
+### Computer-Use Automation — Redesigned Architecture
 
-A "Record Once → Replay Deterministically" engine for automating legacy banking UIs that have no modern APIs.
+A "Record Once → Replay Deterministically" engine with a **user-facing chat interface**.
+Users type natural language; the system drives the legacy banking UI and returns structured results.
 
 ---
 
-## Quick Start (5 minutes)
+## Quick Start
 
 ```bash
-# 1. Clone / enter the project
-cd interface-ai
-
-# 2. Create a virtual environment
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-
-# 3. Install dependencies
+# 1. Set up
+python -m venv venv && source venv/bin/activate    # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# 4. Install Playwright browsers
 playwright install chromium
 
-# 5. Set your Anthropic API key
-export GROQ_API_KEY=sk-ant-...    # Windows: set GROQ_API_KEY=sk-ant-...
-
-# 6. Run the full system
+# 2. Start everything (chat UI + banking app)
 cd src
-python main.py --mode all
+python main.py                   # defaults to --mode chat
+
+# 3. Open http://localhost:5000 in your browser
 ```
 
-That's it. The run takes 60–120 seconds and produces all required evidence files.
+That's it. The chat UI is at **http://localhost:5000**.
+The legacy banking app is at **http://localhost:8080** (for direct inspection).
+
+---
+
+## What You Can Do in the Chat UI
+
+Type natural language — no IDs required if you use a name:
+
+| What you type | What happens |
+|---|---|
+| `What's Alice's balance?` | Looks up member 100001, returns balance + status |
+| `Check member 100002` | Looks up Bob Martinez |
+| `What is the status of Carol?` | Returns account status for 100003 |
+| `Freeze Carol's account` | Updates 100003 status → Frozen (with modal confirmation) |
+| `Close account 100005` | Updates Eva Chen → Closed |
+| `Reactivate account 100003` | Sets status → Active |
+| `Freeze 100001 reason RISK-001` | Update with a reason code |
+
+The **Audit log** button shows every status change made during the session.
+
+---
+
+## Other Modes
+
+```bash
+# Full capability demo — runs balance + update + verify in sequence
+python main.py --mode demo
+
+# Replay a specific member without the chat UI
+python main.py --mode replay --member 100002
+
+# Start only the banking app (for manual browser testing)
+python main.py --mode server
+
+# HITL demo — injects broken locators, shows escalation + intervention file
+python main.py --mode hitl-test --auto     # auto-resolve (no browser needed)
+python main.py --mode hitl-test            # interactive (browser opens, you fix it)
+```
 
 ---
 
@@ -37,203 +67,93 @@ That's it. The run takes 60–120 seconds and produces all required evidence fil
 
 ```
 interface-ai/
-├── README.md                         ← You are here
-├── REPORT.md                         ← 7-section design document
 ├── requirements.txt
-├── evidence/                         ← Generated evidence (gitignored except artifact)
-│   ├── capability_artifact.json      ← Pre-built reference artifact (also output by discovery)
-│   ├── discovery_run.log             ← LLM-driven run transcript (generated)
-│   ├── replay_success.log            ← Successful replay trace (generated)
-│   ├── replay_failure.log            ← Business outcome / failure replay (generated)
-│   ├── replay_success_summary.json   ← Typed output summary (generated)
-│   ├── replay_failure_summary.json   ← Failure summary (generated)
-│   ├── screenshots/                  ← Browser screenshots at key moments
-│   └── interventions/                ← HITL escalation records (if any)
+├── README.md
 └── src/
-    ├── main.py                       ← Entry point / orchestrator
-    ├── discovery.py                  ← LLM discovery agent
-    ├── replay.py                     ← Deterministic replay engine
-    ├── artifact.py                   ← Capability artifact schema + serialization
-    ├── guardrails.py                 ← Safety: allowlist, action gating, PII redaction
-    ├── hitl.py                       ← Human-in-the-loop escalation
-    └── target_app/
-        ├── app.py                    ← Mock banking Flask app
-        └── templates/
-            ├── search.html           ← Search screen (legacy-style markup)
-            ├── detail.html           ← Member detail + balance screen
-            ├── update.html           ← Update account + confirmation modal
-            └── update_success.html   ← Post-update confirmation
+    ├── main.py                      ← Thin orchestrator, all modes
+    ├── artifact.py                  ← CapabilityArtifact schema (data contract)
+    ├── guardrails.py                ← URL allowlist, action gating, PII redaction
+    │
+    ├── capabilities/                ← Pre-built artifacts for each flow
+    │   ├── check_balance.py         ← Balance + status lookup
+    │   ├── update_status.py         ← Account status update (with modal)
+    │   └── registry.py              ← Intent router: text → capability + params
+    │
+    ├── engine/                      ← Deterministic replay (no LLM)
+    │   ├── engine.py                ← Orchestration loop, ReplayResult
+    │   ├── executor.py              ← Single-step execution + checkpoints
+    │   ├── extractor.py             ← Output extraction, business-outcome detection
+    │   └── locator.py               ← Multi-strategy element resolution
+    │
+    ├── hitl/                        ← Human-in-the-loop escalation
+    │   ├── controller.py            ← Pause/resume lifecycle, intervention JSON
+    │   └── annotator.py             ← Screenshot annotation with error banner
+    │
+    ├── ui/                          ← User-facing interface
+    │   ├── chat_app.py              ← Flask chat server (port 5000)
+    │   └── templates/chat.html      ← Chat UI — what the user sees
+    │
+    └── target_app/                  ← Mock legacy banking app (port 8080)
+        ├── app.py                   ← Flask routes (thin layer)
+        ├── database.py              ← In-memory store with real mutation
+        └── templates/               ← Legacy-style HTML (no test IDs)
 ```
 
 ---
 
-## Running Each Mode
+## Architecture
 
-### Full end-to-end (recommended for first run)
-```bash
-python main.py --mode all
 ```
-Starts the mock app → runs LLM discovery → runs replay (success + failure cases) → prints evidence summary.
-
-### Discovery only
-```bash
-python main.py --mode discovery
-```
-Runs only the LLM agent phase. Saves `capability_artifact.json` and `discovery_run.log`.
-
-### Replay only (no API key needed)
-```bash
-python main.py --mode replay --use-prebuilt-artifact
-```
-Skips discovery and uses the pre-built reference artifact. Perfect for testing replay without spending API tokens.
-
-### Replay for a specific member
-```bash
-python main.py --mode replay --member 100002
-python main.py --mode replay --member 000000   # will produce business outcome
+User types: "Freeze Carol's account"
+                ↓
+① Intent Router (capabilities/registry.py)
+   Scores keywords → update_account_status
+   Extracts params → { member_id: "100003", new_status: "Frozen" }
+                ↓
+② Capability Artifact (capabilities/update_status.py)
+   Typed JSON contract: steps, locators, outputs, safety policy
+                ↓
+③ Replay Engine (engine/engine.py) — no LLM
+   Navigate → Select status → Type reason → Click Update → Confirm modal
+   Error taxonomy: success | business_outcome | recoverable | hard_failure
+                ↓
+④ Result → Chat UI
+   "✅ Account updated. Carol Williams → Frozen"
+   (Audit log updated; status persists in database.py)
 ```
 
-### With visible browser window
-```bash
-python main.py --mode all --visible
-```
-Opens a real Chrome window so you can watch the automation run.
+### What changed from the original design
 
-### Target app only (for manual testing)
-```bash
-python main.py --mode server
-# Then open http://localhost:8080 in your browser
-```
+| Problem | Fix |
+|---|---|
+| No user interface — only logs | Added `ui/` with a full chat UI at port 5000 |
+| HITL required Enter to start | Chat mode runs fully headless; HITL only for `--mode hitl-test` |
+| Update flow broken — no persistence | `database.py` module-level dict persists mutations within the process |
+| Update modal didn't pass new_status | Fixed `update.html` — JS syncs hidden fields before POST |
+| One monolithic file per layer | Split into `engine/`, `hitl/`, `capabilities/` packages |
+| Only one capability | Added `update_status` capability with select + modal confirmation |
 
 ---
 
 ## Test Scenarios
 
-| Member ID | Name | Expected Outcome |
-|---|---|---|
-| `100001` | Alice Johnson | ✅ Success — balance: $4521.00, Active |
-| `100002` | Bob Martinez | ✅ Success — balance: $12340.50, Active |
-| `100003` | Carol Williams | ✅ Success — balance: $750.25, **Frozen** |
-| `100004` | David Lee | ✅ Success — balance: $88000.00, Active |
-| `100005` | Eva Chen | ✅ Success — balance: $0.00, **Closed** |
-| `999999` | Test User | ✅ Success — balance: $1234.56, Active |
-| `000000` | N/A | ⚑ Business outcome — "No record found" |
-| `BADTYPE` | N/A | ❌ Hard failure — parameter validation error (not a valid 6-digit ID) |
+| Member | Name | Balance | Status |
+|---|---|---|---|
+| `100001` | Alice Johnson | $4,521.00 | Active |
+| `100002` | Bob Martinez | $12,340.50 | Active |
+| `100003` | Carol Williams | $750.25 | Frozen |
+| `100004` | David Lee | $88,000.00 | Active |
+| `100005` | Eva Chen | $0.00 | Closed |
+| `000000` | — | — | → Business outcome (not found) |
 
 ---
 
-## What Gets Generated
+## Evidence Files
 
-After running `python main.py --mode all`, the `evidence/` directory contains:
+After running, `evidence/` contains:
 
 | File | What it is |
 |---|---|
-| `capability_artifact.json` | The typed JSON contract for the `check_member_balance` capability |
-| `discovery_run.log` | Newline-delimited JSON: every LLM call, tool invocation, and page observation |
-| `replay_success.log` | Newline-delimited JSON: deterministic execution trace for member 100001 |
-| `replay_failure.log` | Newline-delimited JSON: business outcome trace for member 000000 |
-| `replay_success_summary.json` | Structured `ReplayResult` with typed outputs |
-| `replay_failure_summary.json` | Structured `ReplayResult` showing business outcome handling |
-| `screenshots/discovery_final.png` | Browser state at end of discovery run |
-| `screenshots/replay_final.png` | Browser state at end of successful replay |
-
----
-
-## Prerequisites
-
-- **Python 3.10+**
-- **pip** (comes with Python)
-- **Anthropic API key** — required only for `--mode discovery`. Not needed for `--mode replay`.
-- **Port 8080** — must be free for the mock banking app.
-
-### Verify installation
-```bash
-python --version         # Should be 3.10+
-python -c "import anthropic; print(anthropic.__version__)"
-python -c "import playwright; print('playwright ok')"
-python -c "import flask; print(flask.__version__)"
-```
-
----
-
-## Common Issues & Fixes
-
-**Port 8080 already in use**
-```bash
-# Find and kill whatever is using it:
-lsof -i :8080 | grep LISTEN       # macOS/Linux
-netstat -ano | findstr :8080       # Windows
-```
-
-**Playwright browsers not installed**
-```bash
-playwright install chromium
-# or if that doesn't work:
-python -m playwright install chromium
-```
-
-**API key not recognized**
-```bash
-# Verify it's set:
-echo $GROQ_API_KEY       # macOS/Linux
-echo %GROQ_API_KEY%      # Windows
-```
-
-**Discovery times out or gets stuck**
-The discovery agent has a 20-step limit. If the LLM is confused, try running with `--visible` to watch what's happening, or use `--use-prebuilt-artifact` to skip straight to replay.
-
-**ModuleNotFoundError**
-Make sure you're running from inside the `src/` directory:
-```bash
-cd interface-ai/src
-python main.py --mode all
-```
-
----
-
-## Architecture in Brief
-
-```
-Goal: "Find member 100001, get their balance"
-              ↓
-① Discovery Agent (LLM loop — runs ONCE)
-   Observe page → Ask Claude what to do → Execute in Playwright → Repeat
-   Output: capability_artifact.json + discovery_run.log
-              ↓
-② Capability Artifact (JSON contract)
-   Declares: inputs, steps, locator chains, output types, safety policy
-              ↓
-③ Replay Engine (no LLM — runs every time)
-   Reads artifact → Executes steps → Returns typed outputs
-   Error taxonomy: success | business_outcome | recoverable | hard_failure
-              ↓ (if stuck)
-④ HITL Escalation
-   Keeps browser open → Signals operator → Waits for ENTER → Resumes
-```
-
-See `REPORT.md` for the full 7-section design document.
-
----
-
-## Demo Commands for Evaluators
-
-```bash
-# Setup (one time)
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt && playwright install chromium
-export GROQ_API_KEY=gsk_.....
-
-# Full run (all phases)
-cd src && python main.py --mode all --visible
-
-# Replay only — no API key needed
-cd src && python main.py --mode replay --use-prebuilt-artifact
-
-# Test specific members
-python main.py --mode replay --use-prebuilt-artifact --member 100003  # frozen account
-python main.py --mode replay --use-prebuilt-artifact --member 000000  # business outcome
-
-# Inspect the target app manually
-python main.py --mode server
-# Open http://localhost:8080 in browser
-```
+| `replay_*.log` | NDJSON execution trace per run |
+| `screenshots/` | Browser state at key moments |
+| `interventions/` | HITL escalation records with annotated screenshots |
