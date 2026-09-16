@@ -33,18 +33,22 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, render_template, request
 
-# ── path setup ────────────────────────────────────────────────────────────
+# ── path setup — must happen before any local imports ─────────────────────
+# __file__ = src/ui/chat_app.py  →  dirname×2 = src/
 SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, SRC_DIR)
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
 
-from artifact import CapabilityArtifact, build_check_balance_artifact
+from artifact import CapabilityArtifact
+from capabilities.check_balance import build as build_check_balance_artifact
+from capabilities import match as match_capability
 from engine.engine import JobReplayEngine
 
 # ── config ────────────────────────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EVIDENCE_DIR = os.path.join(BASE_DIR, "evidence")
 ARTIFACT_PATH = os.path.join(EVIDENCE_DIR, "capability_artifact.json")
-TARGET_URL   = "http://localhost:8080"
+TARGET_URL   = "http://127.0.0.1:8080"
 
 os.makedirs(os.path.join(EVIDENCE_DIR, "jobs"), exist_ok=True)
 
@@ -129,30 +133,38 @@ def api_chat():
     job_id = f"job_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
     logger.info(f"[chat] New job {job_id}: {message!r}")
 
-    # Parse intent
-    member_id = _parse_member_id(message)
-    if not member_id:
+    # Match intent via registry — supports names ("alice", "carol") and IDs ("100001")
+    cap = match_capability(message)
+    if not cap:
         return jsonify({
             "reply": (
-                "I can look up member accounts for you. "
-                "Please include a 6-digit member ID in your message, "
-                "e.g. \"Check balance for member 100001\"."
+                "I can look up member balances and update account statuses.\n"
+                "Try: \"What is Alice's balance?\" or \"Freeze Carol's account\"."
             ),
             "job_id": None,
             "result": None,
         })
 
+    if cap.missing:
+        missing = ", ".join(cap.missing)
+        return jsonify({
+            "reply": f"I need a bit more info — missing: **{missing}**. Could you clarify?",
+            "job_id": None,
+            "result": None,
+        })
+
+    member_id = cap.parameters.get("member_id", "unknown")
+
     # Run engine
     try:
-        artifact = _load_artifact()
         engine = JobReplayEngine(
             base_evidence_dir=EVIDENCE_DIR,
             headless=True,
             hitl_enabled=False,
         )
         result = engine.run(
-            artifact=artifact,
-            parameters={"member_id": member_id},
+            artifact=cap.artifact,
+            parameters=cap.parameters,
             job_id=job_id,
             non_interactive=True,
         )
@@ -167,14 +179,22 @@ def api_chat():
     # Build human-readable reply
     if result.success:
         bal = result.outputs.get("balance")
-        status = result.outputs.get("status") or result.outputs.get("account_status", "")
-        bal_str = f"${bal:,.2f}" if isinstance(bal, (int, float)) else str(bal)
-        reply = (
-            f"✅ Member **{member_id}** found.\n"
-            f"- Balance: **{bal_str}**\n"
-            f"- Status: **{status}**\n"
-            f"- Completed in {result.duration_seconds:.1f}s ({result.steps_completed} steps)"
-        )
+        status = result.outputs.get("status") or result.outputs.get("account_status") or result.outputs.get("updated_status", "")
+        name = result.outputs.get("member_name", f"Member {member_id}")
+        bal_str = f"${bal:,.2f}" if isinstance(bal, (int, float)) else str(bal) if bal is not None else "—"
+        if cap.name == "update_account_status":
+            reply = (
+                f"✅ **{name}** account updated.\n"
+                f"- New Status: **{status}**\n"
+                f"- Completed in {result.duration_seconds:.1f}s ({result.steps_completed} steps)"
+            )
+        else:
+            reply = (
+                f"✅ **{name}** (ID: {member_id})\n"
+                f"- Balance: **{bal_str}**\n"
+                f"- Status: **{status}**\n"
+                f"- Completed in {result.duration_seconds:.1f}s ({result.steps_completed} steps)"
+            )
     elif result.outcome_type == "business_outcome":
         reply = (
             f"⚑ Member **{member_id}** not found in the system.\n"
@@ -276,12 +296,14 @@ def api_job_details(job_id: str):
 
 @app.route("/api/health-proxy")
 def health_proxy():
-    """Proxy the target app's health endpoint so the UI can poll it."""
+    """Proxy the target app's health endpoint — always 200 so browser never logs fetch errors."""
     try:
-        with urllib.request.urlopen(f"{TARGET_URL}/health", timeout=2) as resp:
-            return jsonify(json.loads(resp.read()))
-    except Exception:
-        return jsonify({"status": "unreachable"}), 503
+        with urllib.request.urlopen(f"{TARGET_URL}/health", timeout=3) as resp:
+            data = json.loads(resp.read())
+            return jsonify({"online": True, **data})
+    except Exception as e:
+        logger.debug(f"[health-proxy] banking app unreachable: {e}")
+        return jsonify({"online": False, "status": "unreachable"})
 
 
 @app.route("/health")

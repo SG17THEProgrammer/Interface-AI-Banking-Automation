@@ -572,3 +572,98 @@ Call log:
 2026-09-16 02:41:45,336  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:41:45] "GET /api/health-proxy HTTP/1.1" 200 -
 2026-09-16 02:41:57,021  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:41:57] "GET /health HTTP/1.1" 200 -
 2026-09-16 02:41:57,022  INFO     werkzeug — 127.0.0.1 - - [16/Sep/2026 02:41:57] "GET /api/health-proxy HTTP/1.1" 200 -
+2026-09-17 03:00:56,376  INFO     chat_app — Starting Chat UI on http://localhost:5000
+2026-09-17 03:00:56,450  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-09-17 03:00:56,451  INFO     werkzeug — Press CTRL+C to quit
+2026-09-17 03:01:04,027  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:01:04] "GET / HTTP/1.1" 200 -
+2026-09-17 03:01:04,235  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:01:04] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2026-09-17 03:01:05,112  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:01:05] "GET /favicon.ico HTTP/1.1" 404 -
+2026-09-17 03:01:18,016  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:01:18] "GET / HTTP/1.1" 200 -
+2026-09-17 03:01:18,603  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:01:18] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2026-09-17 03:02:16,736  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:02:16] "GET / HTTP/1.1" 200 -
+2026-09-17 03:02:17,312  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:02:17] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2026-09-17 03:02:57,139  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:02:57] "GET / HTTP/1.1" 200 -
+2026-09-17 03:02:57,475  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:02:57] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2026-09-17 03:05:40,076  INFO     chat_app — Starting Chat UI on http://localhost:5000
+2026-09-17 03:05:40,155  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-09-17 03:05:40,156  INFO     werkzeug — Press CTRL+C to quit
+2026-09-17 03:05:45,139  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:05:45] "GET / HTTP/1.1" 200 -
+2026-09-17 03:05:45,335  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:05:45] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2026-09-17 03:05:54,805  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:05:54] "GET / HTTP/1.1" 200 -
+2026-09-17 03:05:54,981  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:05:54] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2026-09-17 03:08:39,846  INFO     chat_app — Starting Chat UI on http://localhost:5000
+2026-09-17 03:08:39,911  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-09-17 03:08:39,912  INFO     werkzeug — Press CTRL+C to quit
+2026-09-17 03:08:46,632  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:08:46] "GET / HTTP/1.1" 200 -
+2026-09-17 03:08:50,746  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:08:50] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2026-09-17 03:09:41,324  INFO     chat_app — [chat] New job job_20260916_213941_d9484d: 'check member 100001'
+2026-09-17 03:09:41,363  INFO     engine.engine — [engine] {"event": "replay_start", "capability": "check_member_balance", "job_id": "job_20260916_213941_d9484d", "params": {"member_id": "100001"}, "ts": "2026-09-16T21:39:41.363338+00:00"}
+2026-09-17 03:09:48,060  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s1", "action": "navigate", "url": "about:blank", "ts": "2026-09-16T21:39:48.060433+00:00"}
+2026-09-17 03:09:49,513  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s1", "result": {"step_id": "s1", "action": "navigate", "success": true, "url": "http://localhost:8080/search"}, "ts": "2026-09-16T21:39:49.513960+00:00"}
+2026-09-17 03:09:49,513  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s2", "action": "type", "url": "http://localhost:8080/search", "ts": "2026-09-16T21:39:49.513960+00:00"}
+2026-09-17 03:09:50,648  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s2", "result": {"step_id": "s2", "action": "type", "success": true, "strategy_used": "aria-label", "typed": "100001"}, "ts": "2026-09-16T21:39:50.648934+00:00"}
+2026-09-17 03:09:50,648  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s3", "action": "click", "url": "http://localhost:8080/search", "ts": "2026-09-16T21:39:50.648934+00:00"}
+2026-09-17 03:09:52,273  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s3", "result": {"step_id": "s3", "action": "click", "success": true, "strategy_used": "aria-label"}, "ts": "2026-09-16T21:39:52.273453+00:00"}
+2026-09-17 03:09:52,275  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s4", "action": "extract", "url": "http://localhost:8080/member/100001", "ts": "2026-09-16T21:39:52.275457+00:00"}
+2026-09-17 03:09:52,869  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s4", "result": {"step_id": "s4", "action": "extract", "success": true}, "ts": "2026-09-16T21:39:52.869510+00:00"}
+2026-09-17 03:09:52,870  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s5", "action": "extract", "url": "http://localhost:8080/member/100001", "ts": "2026-09-16T21:39:52.870517+00:00"}
+2026-09-17 03:09:53,413  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s5", "result": {"step_id": "s5", "action": "extract", "success": true}, "ts": "2026-09-16T21:39:53.413540+00:00"}
+2026-09-17 03:09:53,414  INFO     engine.engine — [engine] {"event": "extracting_outputs", "ts": "2026-09-16T21:39:53.414548+00:00"}
+2026-09-17 03:09:53,451  INFO     engine.engine — [engine] {"event": "output_extracted", "field": "balance", "value": "4521.0", "ts": "2026-09-16T21:39:53.451117+00:00"}
+2026-09-17 03:09:53,474  INFO     engine.engine — [engine] {"event": "output_extracted", "field": "status", "value": "Active", "ts": "2026-09-16T21:39:53.474474+00:00"}
+2026-09-17 03:09:53,570  INFO     engine.engine — [engine] {"event": "replay_complete", "outputs": {"balance": 4521.0, "status": "Active"}, "steps": 5, "ts": "2026-09-16T21:39:53.570704+00:00"}
+2026-09-17 03:09:53,835  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:09:53] "POST /api/chat HTTP/1.1" 200 -
+2026-09-17 03:10:11,313  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:10:11] "GET /dashboard?job=job_20260916_213941_d9484d HTTP/1.1" 200 -
+2026-09-17 03:10:11,821  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:10:11] "GET /api/job/job_20260916_213941_d9484d/details HTTP/1.1" 200 -
+2026-09-17 03:13:07,940  INFO     chat_app — [chat] New job job_20260916_214307_42d574: 'what is the status of bob ?'
+2026-09-17 03:13:07,941  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:13:07] "POST /api/chat HTTP/1.1" 200 -
+2026-09-17 03:20:34,233  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:20:34] "GET / HTTP/1.1" 200 -
+2026-09-17 03:20:54,727  INFO     chat_app — Starting Chat UI on http://localhost:5000
+2026-09-17 03:20:54,784  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-09-17 03:20:54,784  INFO     werkzeug — Press CTRL+C to quit
+2026-09-17 03:20:58,889  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:20:58] "GET / HTTP/1.1" 200 -
+2026-09-17 03:21:15,267  INFO     chat_app — [chat] New job job_20260916_215115_388e4a: "What is Alice's balance?"
+2026-09-17 03:21:15,275  INFO     engine.engine — [engine] {"event": "replay_start", "capability": "check_member_balance", "job_id": "job_20260916_215115_388e4a", "params": {"member_id": "100001"}, "ts": "2026-09-16T21:51:15.275551+00:00"}
+2026-09-17 03:21:17,868  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s1_navigate", "action": "navigate", "url": "about:blank", "ts": "2026-09-16T21:51:17.868846+00:00"}
+2026-09-17 03:21:19,335  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s1_navigate", "result": {"step_id": "s1_navigate", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "checkpoint_passed": true}, "ts": "2026-09-16T21:51:19.335167+00:00"}
+2026-09-17 03:21:19,335  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s2_type_id", "action": "type", "url": "http://localhost:8080/search", "ts": "2026-09-16T21:51:19.335167+00:00"}
+2026-09-17 03:21:20,053  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s2_type_id", "result": {"step_id": "s2_type_id", "action": "type", "success": true, "strategy_used": "aria-label", "typed": "100001"}, "ts": "2026-09-16T21:51:20.053656+00:00"}
+2026-09-17 03:21:20,053  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s3_click_search", "action": "click", "url": "http://localhost:8080/search", "ts": "2026-09-16T21:51:20.053656+00:00"}
+2026-09-17 03:21:22,093  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s3_click_search", "result": {"step_id": "s3_click_search", "action": "click", "success": true, "strategy_used": "css", "checkpoint_passed": true}, "ts": "2026-09-16T21:51:22.093925+00:00"}
+2026-09-17 03:21:22,095  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s4_assert_result", "action": "assert", "url": "http://localhost:8080/member/100001", "ts": "2026-09-16T21:51:22.095418+00:00"}
+2026-09-17 03:21:22,687  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s4_assert_result", "result": {"step_id": "s4_assert_result", "action": "assert", "success": true}, "ts": "2026-09-16T21:51:22.687330+00:00"}
+2026-09-17 03:21:22,687  INFO     engine.engine — [engine] {"event": "extracting_outputs", "ts": "2026-09-16T21:51:22.687330+00:00"}
+2026-09-17 03:21:22,709  INFO     engine.engine — [engine] {"event": "output_extracted", "field": "balance", "value": "4521.0", "ts": "2026-09-16T21:51:22.709281+00:00"}
+2026-09-17 03:21:22,729  INFO     engine.engine — [engine] {"event": "output_extracted", "field": "account_status", "value": "Active", "ts": "2026-09-16T21:51:22.729934+00:00"}
+2026-09-17 03:21:22,750  INFO     engine.engine — [engine] {"event": "output_extracted", "field": "member_name", "value": "Alice Johnson", "ts": "2026-09-16T21:51:22.750040+00:00"}
+2026-09-17 03:21:22,832  INFO     engine.engine — [engine] {"event": "replay_complete", "outputs": {"balance": 4521.0, "account_status": "Active", "member_name": "Alice Johnson"}, "steps": 4, "ts": "2026-09-16T21:51:22.832325+00:00"}
+2026-09-17 03:21:23,064  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:21:23] "POST /api/chat HTTP/1.1" 200 -
+2026-09-17 03:21:28,570  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:21:28] "GET /dashboard?job=job_20260916_215115_388e4a HTTP/1.1" 200 -
+2026-09-17 03:21:29,080  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:21:29] "GET /api/job/job_20260916_215115_388e4a/details HTTP/1.1" 200 -
+2026-09-17 03:21:44,553  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:21:44] "GET / HTTP/1.1" 200 -
+2026-09-17 03:22:14,723  INFO     chat_app — [chat] New job job_20260916_215214_cd1abb: "Freeze Carol's account"
+2026-09-17 03:22:14,732  INFO     engine.engine — [engine] {"event": "replay_start", "capability": "update_account_status", "job_id": "job_20260916_215214_cd1abb", "params": {"member_id": "100003", "new_status": "Frozen", "reason_code": "operator-request"}, "ts": "2026-09-16T21:52:14.732352+00:00"}
+2026-09-17 03:22:15,896  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s1_navigate_update", "action": "navigate", "url": "about:blank", "ts": "2026-09-16T21:52:15.895888+00:00"}
+2026-09-17 03:22:17,055  WARNING  replay — [replay] Step s1_navigate_update failed: Checkpoint failed: URL should contain '/update' but got 'http://localhost:8080/search'
+2026-09-17 03:22:17,055  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s1_navigate_update", "result": {"step_id": "s1_navigate_update", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "error": "Checkpoint failed: URL should contain '/update' but got 'http://localhost:8080/search'"}, "ts": "2026-09-16T21:52:17.055914+00:00"}
+2026-09-17 03:22:17,055  INFO     engine.engine — [engine] {"event": "step_start", "step_id": "s2_select_status", "action": "select", "url": "http://localhost:8080/search", "ts": "2026-09-16T21:52:17.055914+00:00"}
+2026-09-17 03:22:17,085  INFO     engine.engine — [engine] {"event": "step_retry", "step_id": "s2_select_status", "attempt": 1, "error": "Unknown action: select", "ts": "2026-09-16T21:52:17.085831+00:00"}
+2026-09-17 03:22:18,116  INFO     engine.engine — [engine] {"event": "step_retry", "step_id": "s2_select_status", "attempt": 2, "error": "Unknown action: select", "ts": "2026-09-16T21:52:18.116459+00:00"}
+2026-09-17 03:22:19,150  INFO     engine.engine — [engine] {"event": "step_done", "step_id": "s2_select_status", "result": {"step_id": "s2_select_status", "action": "select", "success": false, "error": "Unknown action: select"}, "ts": "2026-09-16T21:52:19.149492+00:00"}
+2026-09-17 03:22:19,955  INFO     hitl.annotator — [annotator] Annotated screenshot saved: C:\Documents\vs code\Interface AI\interface-ai\evidence\jobs\job_20260916_215214_cd1abb\screenshots\failure_s2_select_status.png
+2026-09-17 03:22:19,956  INFO     engine.engine — [engine] {"event": "step_failed", "step_id": "s2_select_status", "error": "Unknown action: select", "screenshot": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\evidence\\jobs\\job_20260916_215214_cd1abb\\screenshots\\failure_s2_select_status.png", "ts": "2026-09-16T21:52:19.956894+00:00"}
+2026-09-17 03:22:20,155  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:22:20] "POST /api/chat HTTP/1.1" 200 -
+2026-09-17 03:23:00,031  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:23:00] "GET /dashboard?job=job_20260916_215214_cd1abb HTTP/1.1" 200 -
+2026-09-17 03:23:00,613  INFO     werkzeug — 127.0.0.1 - - [17/Sep/2026 03:23:00] "GET /api/job/job_20260916_215214_cd1abb/details HTTP/1.1" 200 -

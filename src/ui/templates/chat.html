@@ -94,9 +94,11 @@
   .send-btn:disabled{background:var(--surface3);cursor:not-allowed}
   .send-btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
 
-  .hint{font-size:11px;color:var(--muted);text-align:center;margin-top:8px}
-  .hint code{font-family:var(--mono);font-size:10px;background:var(--surface2);
-             padding:1px 5px;border-radius:3px}
+  .suggestions{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
+  .sug-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--accent2);
+           padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--sans);
+           cursor:pointer;transition:all .15s}
+  .sug-btn:hover{border-color:var(--accent);background:var(--surface3);color:var(--text)}
 </style>
 </head>
 <body>
@@ -119,8 +121,15 @@
     <div class="avatar bot">M</div>
     <div>
       <div class="bubble">
-        👋 Hi! I can look up member account balances and statuses from the banking system.<br><br>
-        Try: <strong>"Check balance for member 100001"</strong> or just type a 6-digit member ID.
+        👋 Hi! I can look up member balances and update account statuses. Try one of these:
+      </div>
+      <div class="suggestions">
+        <button class="sug-btn" onclick="suggest(this)">What is Alice's balance?</button>
+        <button class="sug-btn" onclick="suggest(this)">Check Bob's account</button>
+        <button class="sug-btn" onclick="suggest(this)">Is Carol's account active?</button>
+        <button class="sug-btn" onclick="suggest(this)">Freeze Carol's account</button>
+        <button class="sug-btn" onclick="suggest(this)">Reactivate Carol's account</button>
+        <button class="sug-btn" onclick="suggest(this)">Check member 100004</button>
       </div>
     </div>
   </div>
@@ -135,9 +144,7 @@
       <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
   </div>
-  <div class="hint">
-    Sample IDs: <code>100001</code> Alice · <code>100002</code> Bob · <code>100003</code> Carol (frozen) · <code>000000</code> not found
-  </div>
+
 </div>
 
 <script>
@@ -145,20 +152,23 @@ const messagesEl = document.getElementById('messages');
 const inputEl    = document.getElementById('input');
 const sendBtn    = document.getElementById('send-btn');
 
-// ── Status polling ────────────────────────────────────────────────────────
-async function pollStatus() {
+// ── Status — check on load, retry once, recheck before each send ─────────
+async function checkStatus() {
   try {
-    const r = await fetch('/api/health-proxy', { signal: AbortSignal.timeout(2000) });
-    const ok = r.ok;
-    document.getElementById('status-dot').className = 'status-dot ' + (ok ? 'online' : 'offline');
-    document.getElementById('status-label').textContent = ok ? 'Banking app online' : 'Banking app offline';
+    const r = await fetch('/api/health-proxy', { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    setStatus(d.online === true);
   } catch {
-    document.getElementById('status-dot').className = 'status-dot offline';
-    document.getElementById('status-label').textContent = 'Banking app offline';
+    setStatus(false);
   }
 }
-pollStatus();
-setInterval(pollStatus, 12000);
+function setStatus(online) {
+  document.getElementById('status-dot').className = 'status-dot ' + (online ? 'online' : 'offline');
+  document.getElementById('status-label').textContent = online ? 'Banking app online' : 'Banking app offline';
+}
+// Check immediately, then once more after 3s in case the banking app is still starting
+checkStatus();
+setTimeout(checkStatus, 3000);
 
 // ── Auto-resize textarea ──────────────────────────────────────────────────
 inputEl.addEventListener('input', () => {
@@ -254,6 +264,14 @@ function scrollBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+// ── Suggestion buttons ───────────────────────────────────────────────────
+function suggest(btn) {
+  inputEl.value = btn.textContent.trim();
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  inputEl.focus();
+}
+
 // ── Send ──────────────────────────────────────────────────────────────────
 async function sendMessage() {
   const text = inputEl.value.trim();
@@ -265,6 +283,7 @@ async function sendMessage() {
 
   appendUserBubble(text);
   appendThinking();
+  checkStatus(); // refresh dot on actual use
 
   try {
     const resp = await fetch('/api/chat', {

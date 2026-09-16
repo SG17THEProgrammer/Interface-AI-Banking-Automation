@@ -36,7 +36,9 @@ from playwright.sync_api import sync_playwright, Page, TimeoutError as PWTimeout
 # Pull in everything from the existing replay module so callers can keep
 # importing from here if they like.
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+_SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
+if _SRC not in sys.path:
+    sys.path.insert(0, _SRC)
 
 from artifact import CapabilityArtifact, Step, OutputField
 from guardrails import Guardrails, GuardrailViolation, DEFAULT_POLICY

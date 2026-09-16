@@ -1,0 +1,8 @@
+{"event": "replay_start", "capability": "update_account_status", "job_id": "job_20260916_215214_cd1abb", "params": {"member_id": "100003", "new_status": "Frozen", "reason_code": "operator-request"}, "ts": "2026-09-16T21:52:14.732352+00:00"}
+{"event": "step_start", "step_id": "s1_navigate_update", "action": "navigate", "url": "about:blank", "ts": "2026-09-16T21:52:15.895888+00:00"}
+{"event": "step_done", "step_id": "s1_navigate_update", "result": {"step_id": "s1_navigate_update", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "error": "Checkpoint failed: URL should contain '/update' but got 'http://localhost:8080/search'"}, "ts": "2026-09-16T21:52:17.055914+00:00"}
+{"event": "step_start", "step_id": "s2_select_status", "action": "select", "url": "http://localhost:8080/search", "ts": "2026-09-16T21:52:17.055914+00:00"}
+{"event": "step_retry", "step_id": "s2_select_status", "attempt": 1, "error": "Unknown action: select", "ts": "2026-09-16T21:52:17.085831+00:00"}
+{"event": "step_retry", "step_id": "s2_select_status", "attempt": 2, "error": "Unknown action: select", "ts": "2026-09-16T21:52:18.116459+00:00"}
+{"event": "step_done", "step_id": "s2_select_status", "result": {"step_id": "s2_select_status", "action": "select", "success": false, "error": "Unknown action: select"}, "ts": "2026-09-16T21:52:19.149492+00:00"}
+{"event": "step_failed", "step_id": "s2_select_status", "error": "Unknown action: select", "screenshot": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\evidence\\jobs\\job_20260916_215214_cd1abb\\screenshots\\failure_s2_select_status.png", "ts": "2026-09-16T21:52:19.956894+00:00"}

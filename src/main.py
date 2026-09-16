@@ -33,7 +33,8 @@ load_dotenv()
 # ── Make src/ importable ──────────────────────────────────────────────────
 sys.path.insert(0, os.path.dirname(__file__))
 
-from artifact import CapabilityArtifact, build_check_balance_artifact
+from artifact import CapabilityArtifact
+from capabilities.check_balance import build as build_check_balance_artifact
 from discovery import DiscoveryAgent
 from replay import ReplayEngine, ReplayResult
 
@@ -152,16 +153,24 @@ def start_chat_ui() -> subprocess.Popen:
     env = os.environ.copy()
     env["FLASK_ENV"] = "production"
     chat_app_path = os.path.join(UI_DIR, "chat_app.py")
-    proc = subprocess.Popen(
-        [sys.executable, chat_app_path],
-        env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    if wait_for_server("http://localhost:5000", timeout=10):
+    chat_log = os.path.join(EVIDENCE_DIR, "chat_ui_startup.log")
+    with open(chat_log, "w") as log_fh:
+        proc = subprocess.Popen(
+            [sys.executable, chat_app_path],
+            cwd=UI_DIR,
+            env=env,
+            stdout=log_fh,
+            stderr=log_fh,
+        )
+    if wait_for_server("http://localhost:5000", timeout=20):
         print("  ✅  Chat UI is up at http://localhost:5000")
     else:
-        print("  ⚠️   Chat UI may not have started. Check that port 5000 is free.")
+        print(f"  ⚠️   Chat UI failed to start. See {chat_log} for details.")
+        try:
+            with open(chat_log) as f:
+                print(f.read(1500))
+        except Exception:
+            pass
     return proc
 
 
