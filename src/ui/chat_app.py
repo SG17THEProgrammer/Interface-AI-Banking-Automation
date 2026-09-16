@@ -1,284 +1,296 @@
 """
-ui/chat_app.py
---------------
-User-facing chat server (port 5000).
-Receives natural-language messages, routes them to capabilities,
-runs the replay engine in a background thread, and returns results.
+Chat UI — Flask application (port 5000)
+----------------------------------------
+Routes
+  GET  /                      → chat.html
+  POST /api/chat              → run engine, return result + job_id
+  GET  /api/job/<id>/details  → full evidence bundle for dashboard
+  GET  /dashboard             → dashboard.html (auto-loads job if ?job=<id>)
+  GET  /api/health-proxy      → proxy to :8080/health (UI polls this)
+
+Health-check requests (/health, /api/health-proxy) are suppressed from
+run.log via a Werkzeug log filter so the file stays small.
+
+Per-job evidence layout
+  evidence/jobs/{job_id}/
+      replay.log
+      screenshots/
+      interventions/
 """
 
 from __future__ import annotations
+
+import base64
 import json
 import logging
 import os
 import sys
-import threading
 import time
+import traceback
 import uuid
 import urllib.request
+from datetime import datetime, timezone
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, jsonify, render_template, request
 
-_UI_DIR = os.path.dirname(os.path.abspath(__file__))
-_SRC    = os.path.dirname(_UI_DIR)
-sys.path.insert(0, _SRC)
+# ── path setup ────────────────────────────────────────────────────────────
+SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, SRC_DIR)
 
-from capabilities.registry import match, list_capabilities
-from engine.engine import ReplayEngine
+from artifact import CapabilityArtifact, build_check_balance_artifact
+from engine.engine import JobReplayEngine
 
-logger = logging.getLogger(__name__)
-app    = Flask(__name__, template_folder=os.path.join(_UI_DIR, "templates"))
+# ── config ────────────────────────────────────────────────────────────────
+BASE_DIR     = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+EVIDENCE_DIR = os.path.join(BASE_DIR, "evidence")
+ARTIFACT_PATH = os.path.join(EVIDENCE_DIR, "capability_artifact.json")
+TARGET_URL   = "http://localhost:8080"
 
-EVIDENCE_DIR  = os.path.join(_SRC, "..", "evidence")
-BANKING_URL   = "http://localhost:8080"
+os.makedirs(os.path.join(EVIDENCE_DIR, "jobs"), exist_ok=True)
 
-# job_id → result dict
-_jobs: dict[str, dict] = {}
-_lock = threading.Lock()
+# ── Flask app ─────────────────────────────────────────────────────────────
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), "templates"),
+)
 
+# ── Suppress health-check lines from Werkzeug access log ─────────────────
+class _HealthFilter(logging.Filter):
+    """Drop Werkzeug access-log records for polling endpoints."""
+    _SKIP = {"/health", "/api/health-proxy"}
 
-# ── Pages ────────────────────────────────────────────────────────────────
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        return not any(skip in msg for skip in self._SKIP)
 
-@app.route("/")
-def index():
-    return render_template("chat.html", capabilities=list_capabilities())
+logging.getLogger("werkzeug").addFilter(_HealthFilter())
 
-
-# ── Chat API ──────────────────────────────────────────────────────────────
-
-@app.route("/api/chat", methods=["POST"])
-def chat():
-    data    = request.get_json(force=True)
-    message = (data.get("message") or "").strip()
-    if not message:
-        return jsonify({"error": "empty message"}), 400
-
-    job_id = str(uuid.uuid4())
-    cap    = match(message)
-
-    # No capability matched
-    if cap is None:
-        return jsonify({
-            "job_id": job_id,
-            "type":   "no_match",
-            "reply": (
-                "I didn't understand that. I can help you:\n"
-                "• **Check a balance** — e.g. 'What is Alice's balance?' or 'check member 100002'\n"
-                "• **Update account status** — e.g. 'freeze Carol's account' or 'close account 100005'\n\n"
-                "Just tell me which member and what you'd like to do."
-            ),
-        })
-
-    # Missing required parameters
-    if cap.missing:
-        prompts = {
-            "member_id":  "Which member? Use their name (Alice, Bob…) or their 6-digit ID.",
-            "new_status": "What should the new status be? (Active / Frozen / Closed)",
-        }
-        asks = [prompts.get(k, f"Please provide: {k}") for k in cap.missing]
-        return jsonify({
-            "job_id":  job_id,
-            "type":    "needs_info",
-            "reply":   "\n".join(asks),
-            "missing": cap.missing,
-        })
-
-    # Build the human-readable subject label (name preferred over ID)
-    subject_label = _subject_label(cap.parameters)
-
-    # Already-frozen / already-closed guard (instant check before running engine)
-    if cap.name == "update_account_status":
-        warning = _check_already_same_status(cap.parameters)
-        if warning:
-            return jsonify({
-                "job_id":  job_id,
-                "type":    "warning",
-                "reply":   f"No update needed for {subject_label}.",
-                "warning": warning,
-            })
-
-    # Kick off engine in background
-    with _lock:
-        _jobs[job_id] = {"status": "running", "capability": cap.name, "started": time.time()}
-
-    threading.Thread(
-        target=_run,
-        args=(job_id, cap, subject_label),
-        daemon=True,
-    ).start()
-
-    return jsonify({
-        "job_id":        job_id,
-        "type":          "accepted",
-        "capability":    cap.name,
-        "parameters":    cap.parameters,
-        "subject_label": subject_label,
-    })
-
-
-@app.route("/api/job/<job_id>")
-def job_status(job_id: str):
-    with _lock:
-        job = _jobs.get(job_id)
-    if not job:
-        return jsonify({"error": "unknown job"}), 404
-    return jsonify(job)
-
-
-# ── Proxy endpoints (avoids CORS issues from the browser) ─────────────────
-
-@app.route("/api/audit-log")
-def audit_log():
-    """Proxy to banking app — avoids CORS issue when browser calls it directly."""
-    try:
-        with urllib.request.urlopen(f"{BANKING_URL}/api/audit-log", timeout=3) as r:
-            return app.response_class(r.read(), mimetype="application/json")
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-
-
-@app.route("/api/health-proxy")
-def health_proxy():
-    """Proxy health check so the browser doesn't hit localhost:8080 directly."""
-    try:
-        with urllib.request.urlopen(f"{BANKING_URL}/health", timeout=2) as r:
-            return app.response_class(r.read(), mimetype="application/json")
-    except Exception:
-        return jsonify({"status": "offline"}), 502
-
-
-# ── Background worker ─────────────────────────────────────────────────────
-
-def _run(job_id: str, cap, subject_label: str):
-    try:
-        engine   = ReplayEngine(
-            evidence_dir=EVIDENCE_DIR,
-            headless=True,
-            max_retries_per_step=2,
-            hitl_enabled=False,
-        )
-        artifact = cap.artifact
-        params   = cap.parameters
-
-        if artifact.name == "update_account_status":
-            _patch_update_url(artifact, params)
-
-        result = engine.run(
-            artifact=artifact,
-            parameters=params,
-            log_suffix=f"chat_{job_id[:8]}",
-            non_interactive=True,
-        )
-
-        with _lock:
-            _jobs[job_id] = {
-                "status":   "done",
-                "outcome":  result.outcome_type,
-                "success":  result.success,
-                "outputs":  result.outputs,
-                "business_outcome": result.business_outcome,
-                "error":    result.error,
-                "duration": round(result.duration_seconds, 2),
-                "steps":    result.steps_completed,
-                "reply":    _format_reply(cap.name, result, params, subject_label),
-            }
-    except Exception as e:
-        logger.exception(f"[chat] Job {job_id} failed")
-        with _lock:
-            _jobs[job_id] = {
-                "status":  "done",
-                "outcome": "hard_failure",
-                "success": False,
-                "error":   str(e),
-                "reply":   f"❌ Automation error: {e}",
-            }
+# ── Logging ───────────────────────────────────────────────────────────────
+os.makedirs(EVIDENCE_DIR, exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-7s  %(name)s — %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(os.path.join(EVIDENCE_DIR, "run.log"), mode="a"),
+    ],
+)
+logger = logging.getLogger("chat_app")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 
-def _subject_label(params: dict) -> str:
-    """Return a human-friendly label: prefer resolved name over raw ID."""
-    # Try to get the actual name from the banking app
-    mid = params.get("member_id", "")
+def _load_artifact() -> CapabilityArtifact:
+    if os.path.exists(ARTIFACT_PATH):
+        return CapabilityArtifact.load(ARTIFACT_PATH)
+    art = build_check_balance_artifact(target_url=TARGET_URL)
+    art.save(ARTIFACT_PATH)
+    return art
+
+
+def _parse_member_id(message: str) -> str | None:
+    """Very simple intent parser — extract a 6-digit member ID from the message."""
+    import re
+    m = re.search(r"\b(\d{6})\b", message)
+    return m.group(1) if m else None
+
+
+def _img_to_b64(path: str) -> str | None:
     try:
-        with urllib.request.urlopen(f"{BANKING_URL}/api/member/{mid}", timeout=2) as r:
-            data = json.loads(r.read())
-            name = data.get("name", "")
-            if name:
-                return f"{name} (ID {mid})"
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
     except Exception:
-        pass
-    return f"member {mid}"
-
-
-def _check_already_same_status(params: dict) -> str | None:
-    """
-    If the requested new_status matches the current status, return a warning string.
-    Returns None if the update should proceed.
-    """
-    mid        = params.get("member_id", "")
-    new_status = params.get("new_status", "")
-    if not mid or not new_status:
         return None
+
+
+# ── Routes ────────────────────────────────────────────────────────────────
+
+@app.route("/")
+def index():
+    return render_template("chat.html")
+
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
+
+
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    """
+    Body: { "message": "Check member 100001" }
+    Returns: { "reply": "...", "job_id": "...", "result": {...} }
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"error": "empty message"}), 400
+
+    job_id = f"job_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+    logger.info(f"[chat] New job {job_id}: {message!r}")
+
+    # Parse intent
+    member_id = _parse_member_id(message)
+    if not member_id:
+        return jsonify({
+            "reply": (
+                "I can look up member accounts for you. "
+                "Please include a 6-digit member ID in your message, "
+                "e.g. \"Check balance for member 100001\"."
+            ),
+            "job_id": None,
+            "result": None,
+        })
+
+    # Run engine
     try:
-        with urllib.request.urlopen(f"{BANKING_URL}/api/member/{mid}", timeout=2) as r:
-            data = json.loads(r.read())
-        current = data.get("account_status", "")
-        name    = data.get("name", f"Member {mid}")
-        if current.lower() == new_status.lower():
-            return (
-                f"{name}'s account is already {current}. "
-                "No changes were made."
-            )
+        artifact = _load_artifact()
+        engine = JobReplayEngine(
+            base_evidence_dir=EVIDENCE_DIR,
+            headless=True,
+            hitl_enabled=False,
+        )
+        result = engine.run(
+            artifact=artifact,
+            parameters={"member_id": member_id},
+            job_id=job_id,
+            non_interactive=True,
+        )
+    except Exception as e:
+        logger.error(f"[chat] Engine error for {job_id}: {e}\n{traceback.format_exc()}")
+        return jsonify({
+            "reply": f"An internal error occurred: {e}",
+            "job_id": job_id,
+            "result": None,
+        }), 500
+
+    # Build human-readable reply
+    if result.success:
+        bal = result.outputs.get("balance")
+        status = result.outputs.get("status") or result.outputs.get("account_status", "")
+        bal_str = f"${bal:,.2f}" if isinstance(bal, (int, float)) else str(bal)
+        reply = (
+            f"✅ Member **{member_id}** found.\n"
+            f"- Balance: **{bal_str}**\n"
+            f"- Status: **{status}**\n"
+            f"- Completed in {result.duration_seconds:.1f}s ({result.steps_completed} steps)"
+        )
+    elif result.outcome_type == "business_outcome":
+        reply = (
+            f"⚑ Member **{member_id}** not found in the system.\n"
+            f"{result.business_outcome or ''}\n"
+            f"Completed in {result.duration_seconds:.1f}s"
+        )
+    else:
+        reply = (
+            f"❌ Could not retrieve data for member **{member_id}**.\n"
+            f"Error: {result.error or 'unknown'}\n"
+            f"Failed at step: {result.failed_step_id or 'unknown'}"
+        )
+
+    return jsonify({
+        "reply": reply,
+        "job_id": job_id,
+        "result": {
+            "outcome_type": result.outcome_type,
+            "success": result.success,
+            "outputs": result.outputs,
+            "steps_completed": result.steps_completed,
+            "duration_seconds": result.duration_seconds,
+            "retries_used": result.retries_used,
+        },
+    })
+
+
+@app.route("/api/job/<job_id>/details")
+def api_job_details(job_id: str):
+    """
+    Returns the full evidence bundle for one job as JSON:
+    {
+      job_id, log_entries, screenshots: [{name, b64, size}], interventions: [...]
+    }
+    """
+    # Sanitise job_id — must match expected pattern
+    import re
+    if not re.fullmatch(r"[a-zA-Z0-9_\-]+", job_id):
+        return jsonify({"error": "invalid job_id"}), 400
+
+    job_dir = os.path.join(EVIDENCE_DIR, "jobs", job_id)
+    if not os.path.isdir(job_dir):
+        return jsonify({"error": "job not found"}), 404
+
+    # ── Log entries ──────────────────────────────────────────────────
+    log_entries: list[dict] = []
+    total_lines = 0
+    MAX_LINES = 500
+    for fname in sorted(os.listdir(job_dir)):
+        if not fname.endswith(".log"):
+            continue
+        fpath = os.path.join(job_dir, fname)
+        with open(fpath, encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        total_lines += len(lines)
+        # Tail-guard: show last MAX_LINES if too large
+        for line in lines[-MAX_LINES:]:
+            try:
+                log_entries.append(json.loads(line))
+            except Exception:
+                pass
+
+    # ── Screenshots ──────────────────────────────────────────────────
+    screenshots = []
+    ss_dir = os.path.join(job_dir, "screenshots")
+    if os.path.isdir(ss_dir):
+        for fname in sorted(os.listdir(ss_dir)):
+            if not fname.lower().endswith((".png", ".jpg", ".jpeg")):
+                continue
+            fpath = os.path.join(ss_dir, fname)
+            size = os.path.getsize(fpath)
+            b64 = _img_to_b64(fpath)
+            if b64:
+                screenshots.append({"name": fname, "b64": b64, "size": size})
+
+    # ── Interventions ────────────────────────────────────────────────
+    interventions = []
+    int_dir = os.path.join(job_dir, "interventions")
+    if os.path.isdir(int_dir):
+        for fname in sorted(os.listdir(int_dir)):
+            if not fname.endswith(".json"):
+                continue
+            fpath = os.path.join(int_dir, fname)
+            try:
+                with open(fpath, encoding="utf-8") as f:
+                    interventions.append(json.load(f))
+            except Exception:
+                pass
+
+    return jsonify({
+        "job_id": job_id,
+        "total_log_lines": total_lines,
+        "truncated": total_lines > MAX_LINES,
+        "log_entries": log_entries,
+        "screenshots": screenshots,
+        "interventions": interventions,
+    })
+
+
+@app.route("/api/health-proxy")
+def health_proxy():
+    """Proxy the target app's health endpoint so the UI can poll it."""
+    try:
+        with urllib.request.urlopen(f"{TARGET_URL}/health", timeout=2) as resp:
+            return jsonify(json.loads(resp.read()))
     except Exception:
-        pass
-    return None
+        return jsonify({"status": "unreachable"}), 503
 
 
-def _patch_update_url(artifact, params: dict):
-    """Replace {member_id} placeholder in the navigate step with the real ID."""
-    mid = params.get("member_id", "")
-    for step in artifact.steps:
-        if step.action == "navigate" and step.input_value and "{member_id}" in step.input_value:
-            step.input_value = step.input_value.replace("{member_id}", mid)
-            step.input_var   = None
-            break
-
-
-def _format_reply(capability: str, result, params: dict, subject_label: str) -> str:
-    if result.outcome_type == "business_outcome":
-        return f"⚑ {result.business_outcome}"
-
-    if result.outcome_type == "hard_failure":
-        step = result.failed_step_id or "unknown"
-        return f"❌ Automation failed at step `{step}`.\n{result.error or ''}"
-
-    if capability == "check_member_balance":
-        name    = result.outputs.get("member_name") or subject_label
-        balance = result.outputs.get("balance")
-        status  = result.outputs.get("account_status", "")
-        bal_str = f"${balance:,.2f}" if isinstance(balance, (int, float)) else str(balance)
-        return (
-            f"✅ **{name}**\n"
-            f"• Balance: **{bal_str}**\n"
-            f"• Status: **{status}**"
-        )
-
-    if capability == "update_account_status":
-        name       = result.outputs.get("member_name") or subject_label
-        new_status = result.outputs.get("updated_status") or params.get("new_status", "")
-        return (
-            f"✅ Account updated for **{name}**.\n"
-            f"• New status: **{new_status}**"
-        )
-
-    return f"✅ Done. {result.outputs}"
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "app": "chat-ui"})
 
 
 # ── Entry point ───────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    os.makedirs(EVIDENCE_DIR, exist_ok=True)
-    print("\n  Chat UI → http://localhost:5000")
-    print("  Banking app must be running on http://localhost:8080\n")
+    logger.info("Starting Chat UI on http://localhost:5000")
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)

@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Run Dashboard</title>
+<style>
+  :root {
+    --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--surface3:#21262d;
+    --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);
+    --text:#e6edf3;--muted:#7d8590;--accent:#6366f1;--accent2:#818cf8;
+    --success:#3fb950;--warn:#d29922;--danger:#f85149;--info:#58a6ff;--hitl:#bc8cff;
+    --mono:'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6;min-height:100vh}
+
+  /* HEADER */
+  .hdr{border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;
+       justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:100;gap:12px}
+  .hdr-left{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{width:28px;height:28px;background:var(--accent);border-radius:6px;
+        display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+  .hdr h1{font-size:13px;font-weight:600;white-space:nowrap}
+  .hdr-sub{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;
+           overflow:hidden;text-overflow:ellipsis;max-width:500px}
+  .hdr-right{display:flex;gap:6px;flex-shrink:0}
+  .btn{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);
+       color:var(--text);padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px;
+       font-family:var(--sans);transition:all .15s;white-space:nowrap;text-decoration:none}
+  .btn:hover{border-color:var(--accent);background:var(--surface3)}
+
+  .main{padding:20px 24px;max-width:1400px;margin:0 auto}
+
+  /* LOADING */
+  #loading{display:none;text-align:center;padding:60px 20px}
+  .spinner{width:32px;height:32px;border:3px solid var(--border2);
+           border-top-color:var(--accent);border-radius:50%;
+           animation:spin .7s linear infinite;margin:0 auto 14px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ERROR banner */
+  #error-banner{display:none;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);
+                border-radius:7px;padding:14px 18px;margin-bottom:16px;color:var(--danger)}
+
+  /* UPLOAD TABS (fallback) */
+  #upload-section{display:none}
+  .upload-tabs{display:flex;gap:3px;margin-bottom:14px}
+  .upload-tab{padding:5px 14px;border-radius:5px 5px 0 0;border:1px solid var(--border);
+              border-bottom:none;background:var(--surface2);color:var(--muted);
+              cursor:pointer;font-size:11px;font-family:var(--sans);transition:all .15s}
+  .upload-tab.active{background:var(--surface);color:var(--text);border-color:var(--border2)}
+  .upload-panel{background:var(--surface);border:1px solid var(--border2);
+                border-radius:0 7px 7px 7px;padding:20px;display:none}
+  .upload-panel.active{display:block}
+  .drop-zone{border:1.5px dashed var(--border2);border-radius:8px;padding:32px 24px;
+             text-align:center;cursor:pointer;transition:all .2s}
+  .drop-zone.drag-over{border-color:var(--accent);background:rgba(99,102,241,.04)}
+  .drop-zone p{color:var(--muted);font-size:12px;margin-top:6px}
+  .drop-zone b{color:var(--text)}
+  .file-chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px}
+  .chip{background:var(--surface2);border:1px solid var(--border);border-radius:3px;
+        padding:2px 8px;font-size:10px;font-family:var(--mono);color:var(--muted)}
+  .size-guard{font-size:10px;color:var(--warn);margin-top:6px;display:none}
+
+  /* SECTION */
+  .sec{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);
+       text-transform:uppercase;margin-bottom:10px;margin-top:22px;
+       display:flex;align-items:center;gap:8px}
+  .sec:first-child{margin-top:0}
+  .sec-line{flex:1;height:1px;background:var(--border)}
+
+  /* STATS */
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:12px 14px}
+  .stat-label{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:500}
+  .stat-val{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .stat-val.c-s{color:var(--success)}.stat-val.c-w{color:var(--warn)}
+  .stat-val.c-d{color:var(--danger)}.stat-val.c-i{color:var(--info)}.stat-val.c-h{color:var(--hitl)}
+  .stat-sub{font-size:10px;color:var(--muted);margin-top:4px}
+
+  /* TAGS */
+  .tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:500;white-space:nowrap}
+  .tag.s{background:rgba(63,185,80,.12);color:#3fb950}.tag.w{background:rgba(210,153,34,.12);color:#d29922}
+  .tag.d{background:rgba(248,81,73,.12);color:#f85149}.tag.i{background:rgba(88,166,255,.12);color:#58a6ff}
+  .tag.h{background:rgba(188,140,255,.12);color:#bc8cff}.tag.m{background:rgba(255,255,255,.06);color:var(--muted)}
+  .ab{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;font-family:var(--mono)}
+  .ab-navigate{background:rgba(99,102,241,.15);color:#818cf8}.ab-type{background:rgba(88,166,255,.15);color:#58a6ff}
+  .ab-click{background:rgba(63,185,80,.15);color:#3fb950}.ab-extract{background:rgba(210,153,34,.15);color:#d29922}
+  .ab-assert{background:rgba(188,140,255,.15);color:#bc8cff}.ab-other{background:rgba(255,255,255,.06);color:var(--muted)}
+
+  /* TIMELINE */
+  .timeline{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:12px}
+  .tl-hdr{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+          justify-content:space-between;font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+  .tl-row{display:grid;grid-template-columns:38px 76px 1fr 58px 68px 190px;align-items:center;
+          padding:7px 14px;border-bottom:1px solid var(--border);gap:8px;transition:background .1s}
+  .tl-row:last-child{border-bottom:none}
+  .tl-row:hover{background:var(--surface2)}
+  .tl-step{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .tl-bar-wrap{height:5px;background:rgba(255,255,255,.04);border-radius:3px}
+  .tl-bar{height:100%;border-radius:3px;min-width:3px}
+  .tl-dur{font-size:10px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .tl-desc{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* CHARTS */
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  @media(max-width:680px){.charts-row{grid-template-columns:1fr}}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px}
+  .chart-title{font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em;margin-bottom:12px;text-transform:uppercase}
+  .chart-wrap{position:relative;width:100%;height:170px}
+
+  /* GALLERY */
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:12px}
+  .gallery-item{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .gallery-item.hitl-img{border-color:rgba(188,140,255,.3)}
+  .gallery-item.failure-img{border-color:rgba(248,81,73,.3)}
+  .gallery-item.success-img{border-color:rgba(63,185,80,.2)}
+  .img-header{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .img-name{font-size:11px;font-weight:500;font-family:var(--mono);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .img-meta{font-size:10px;color:var(--muted)}
+  .img-wrap{cursor:pointer;position:relative}
+  .img-wrap img{width:100%;height:200px;object-fit:cover;object-position:top;display:block;transition:height .2s}
+  .img-wrap img.expanded{height:auto;max-height:500px;object-fit:contain;object-position:center;background:#000}
+  .img-expand-hint{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.65);
+                   color:#fff;font-size:10px;padding:2px 7px;border-radius:3px;pointer-events:none}
+
+  /* OUTPUTS */
+  .outputs-panel{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px;margin-bottom:12px}
+  .outputs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+  .out-item{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:9px 12px}
+  .out-key{font-size:9px;color:var(--muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+  .out-val{font-family:var(--mono);font-size:13px;color:var(--success);font-weight:700}
+  .out-val.nv{color:var(--danger);font-size:11px;font-style:italic;font-weight:400}
+
+  /* HITL CARDS */
+  .hitl-card{background:rgba(188,140,255,.05);border:1px solid rgba(188,140,255,.2);
+             border-radius:7px;padding:14px 16px;margin-bottom:8px}
+  .hitl-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .hitl-badge{display:inline-flex;align-items:center;gap:4px;
+              background:rgba(188,140,255,.12);color:var(--hitl);
+              padding:2px 9px;border-radius:4px;font-size:11px;font-weight:500}
+  .hitl-grid{display:grid;grid-template-columns:140px 1fr;gap:5px 14px;font-size:11px}
+  .hk{color:var(--muted)}.hv{font-family:var(--mono);font-size:10px;word-break:break-all}
+  .hitl-reason{grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);
+               border-radius:4px;padding:7px 10px;font-family:var(--mono);font-size:10px;
+               white-space:pre-wrap;word-break:break-word;color:var(--warn);margin-top:3px}
+
+  /* EVENT LOG */
+  .log-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .log-toolbar{padding:8px 12px;border-bottom:1px solid var(--border);
+               display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .log-label{font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;margin-right:3px}
+  .filt{padding:2px 9px;border-radius:3px;border:1px solid var(--border);
+        background:transparent;color:var(--muted);font-size:10px;cursor:pointer;
+        font-family:var(--sans);transition:all .12s}
+  .filt.on{border-color:var(--accent);color:var(--accent2);background:rgba(99,102,241,.1)}
+  .log-scroll{max-height:440px;overflow-y:auto}
+  .log-row{display:grid;grid-template-columns:90px 185px 1fr auto;align-items:start;
+           gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);
+           font-family:var(--mono);font-size:11px;cursor:pointer;transition:background .1s}
+  .log-row:last-child{border-bottom:none}
+  .log-row:hover{background:var(--surface2)}
+  .log-ts{color:var(--muted);white-space:nowrap}
+  .log-event{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .log-row.ev-error .log-event{color:var(--danger)}.log-row.ev-warn .log-event{color:var(--warn)}
+  .log-row.ev-hitl .log-event{color:var(--hitl)}.log-row.ev-done .log-event{color:var(--success)}
+  .log-row.ev-default .log-event{color:var(--accent2)}
+  .log-data{color:var(--text);opacity:.6;word-break:break-all;
+            display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .log-row.expanded .log-data{-webkit-line-clamp:unset;overflow:visible;white-space:pre-wrap;opacity:.85}
+  .log-expand{color:var(--muted);font-size:10px;cursor:pointer;padding:1px 5px;
+              border-radius:3px;border:1px solid var(--border);font-family:var(--sans);
+              background:transparent;transition:all .12s;white-space:nowrap;align-self:flex-start}
+  .log-expand:hover{border-color:var(--accent2);color:var(--accent2)}
+
+  /* EMPTY */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+         padding:40px 20px;gap:7px;text-align:center}
+  .empty-icon{font-size:22px;opacity:.2}
+  .empty-title{font-size:12px;font-weight:500;color:var(--muted)}
+  .empty-sub{font-size:11px;color:var(--muted);opacity:.7;max-width:300px;line-height:1.6}
+
+  /* LIGHTBOX */
+  #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999;
+            align-items:center;justify-content:center;flex-direction:column;gap:12px}
+  #lightbox.open{display:flex}
+  #lightbox img{max-width:90vw;max-height:82vh;object-fit:contain;border-radius:4px}
+  #lb-caption{color:rgba(255,255,255,.7);font-size:12px;font-family:var(--mono);text-align:center;max-width:80vw}
+  #lb-close{position:absolute;top:16px;right:20px;color:rgba(255,255,255,.5);
+            font-size:24px;cursor:pointer;background:none;border:none;line-height:1}
+  #lb-close:hover{color:#fff}
+
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLB()">
+  <button id="lb-close" onclick="closeLB()">✕</button>
+  <img id="lb-img" src="" alt="">
+  <div id="lb-caption"></div>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="logo">A</div>
+    <div>
+      <div style="font-size:13px;font-weight:600">Automation Run Dashboard</div>
+      <div class="hdr-sub" id="hdr-sub">Loading…</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <a class="btn" href="/">← Chat</a>
+    <button class="btn" id="upload-toggle-btn" onclick="toggleUpload()" style="display:none">
+      📂 Manual upload
+    </button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- Loading spinner (shown while fetching job data) -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div style="color:var(--muted);font-size:12px">Loading run data…</div>
+  </div>
+
+  <!-- Error banner -->
+  <div id="error-banner"></div>
+
+  <!-- Manual upload fallback (3 tabs) -->
+  <div id="upload-section">
+    <div class="upload-tabs">
+      <button class="upload-tab active" onclick="switchUpTab(0)">📋 Logs</button>
+      <button class="upload-tab"        onclick="switchUpTab(1)">🖼 Screenshots</button>
+      <button class="upload-tab"        onclick="switchUpTab(2)">🛑 Interventions</button>
+    </div>
+
+    <!-- Logs tab -->
+    <div class="upload-panel active" id="up-logs">
+      <div class="drop-zone" id="dz-logs" onclick="document.getElementById('fi-logs').click()"
+           ondragover="dzOver(event,'dz-logs')" ondragleave="dzLeave('dz-logs')"
+           ondrop="dzDrop(event,'dz-logs','log')">
+        <div style="font-size:22px;opacity:.3">📋</div>
+        <b>Drop log files here</b>
+        <p>discovery_run.log · replay_*.log</p>
+        <div class="file-chips">
+          <span class="chip">*.log</span><span class="chip">*_summary.json</span>
+        </div>
+      </div>
+      <div class="size-guard" id="log-size-guard"></div>
+      <input type="file" id="fi-logs" multiple accept=".log,.json" style="display:none"
+             onchange="handleUpload(this.files,'log')">
+    </div>
+
+    <!-- Screenshots tab -->
+    <div class="upload-panel" id="up-screenshots">
+      <div class="drop-zone" id="dz-ss" onclick="document.getElementById('fi-ss').click()"
+           ondragover="dzOver(event,'dz-ss')" ondragleave="dzLeave('dz-ss')"
+           ondrop="dzDrop(event,'dz-ss','image')">
+        <div style="font-size:22px;opacity:.3">🖼</div>
+        <b>Drop screenshot files here</b>
+        <p>discovery_final.png · replay_final.png · HITL_*.png</p>
+        <div class="file-chips">
+          <span class="chip" style="color:var(--info)">*.png</span>
+          <span class="chip" style="color:var(--info)">*.jpg</span>
+        </div>
+      </div>
+      <input type="file" id="fi-ss" multiple accept=".png,.jpg,.jpeg" style="display:none"
+             onchange="handleUpload(this.files,'image')">
+    </div>
+
+    <!-- Interventions tab -->
+    <div class="upload-panel" id="up-interventions">
+      <div class="drop-zone" id="dz-int" onclick="document.getElementById('fi-int').click()"
+           ondragover="dzOver(event,'dz-int')" ondragleave="dzLeave('dz-int')"
+           ondrop="dzDrop(event,'dz-int','intervention')">
+        <div style="font-size:22px;opacity:.3">🛑</div>
+        <b>Drop intervention JSON files</b>
+        <p>evidence/interventions/intervention_HITL_*.json</p>
+        <div class="file-chips"><span class="chip">intervention_*.json</span></div>
+      </div>
+      <input type="file" id="fi-int" multiple accept=".json" style="display:none"
+             onchange="handleUpload(this.files,'intervention')">
+    </div>
+  </div>
+
+  <!-- Dashboard content (rendered after data loads) -->
+  <div id="dashboard" style="display:none">
+
+    <div class="sec">Overview <span class="sec-line"></span></div>
+    <div class="stat-row" id="stat-row"></div>
+
+    <div id="outputs-section"></div>
+
+    <div class="sec" style="margin-top:20px">Step Timeline <span class="sec-line"></span></div>
+    <div id="timeline-section"></div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Step Duration (ms)</div>
+        <div class="chart-wrap"><canvas id="c-dur"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Action Distribution</div>
+        <div class="chart-wrap"><canvas id="c-act"></canvas></div>
+      </div>
+    </div>
+
+    <div id="gallery-section" style="display:none">
+      <div class="sec">Screenshots <span class="sec-line"></span>
+        <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">
+          Click any image to enlarge
+        </span>
+      </div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+
+    <div id="hitl-section" style="display:none">
+      <div class="sec">HITL Interventions <span class="sec-line"></span></div>
+      <div id="hitl-cards"></div>
+    </div>
+
+    <div class="sec">Event Log <span class="sec-line"></span>
+      <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">
+        Click any row to expand
+      </span>
+    </div>
+    <div id="log-section"></div>
+
+  </div><!-- /dashboard -->
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ═══════════════════════════ STATE ══════════════════════════════════ */
+const D = {
+  logEntries: [],
+  screenshots: [],   // [{name, src, size}]
+  interventions: [],
+  jobId: null,
+  truncated: false,
+  totalLines: 0,
+};
+
+/* ═══════════════════════════ INIT ═══════════════════════════════════ */
+(async function init() {
+  const params = new URLSearchParams(location.search);
+  const jobId  = params.get('job');
+
+  if (jobId) {
+    D.jobId = jobId;
+    await loadJob(jobId);
+  } else {
+    // No job param — show manual upload UI
+    document.getElementById('hdr-sub').textContent = 'Manual upload mode · drop evidence files below';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('upload-section').style.display = 'block';
+  }
+})();
+
+/* ═══════════════════════════ JOB LOADER ════════════════════════════ */
+async function loadJob(jobId) {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('hdr-sub').textContent = `Loading job ${jobId}…`;
+
+  try {
+    const resp = await fetch(`/api/job/${encodeURIComponent(jobId)}/details`);
+    if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+    const data = await resp.json();
+
+    D.logEntries    = data.log_entries  || [];
+    D.interventions = data.interventions || [];
+    D.truncated     = data.truncated    || false;
+    D.totalLines    = data.total_log_lines || 0;
+
+    // Convert b64 screenshots to data URLs
+    D.screenshots = (data.screenshots || []).map(s => ({
+      name: s.name,
+      src: `data:image/png;base64,${s.b64}`,
+      size: s.size,
+    }));
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('upload-toggle-btn').style.display = 'flex';
+
+    const logCount = D.logEntries.length;
+    const ssCount  = D.screenshots.length;
+    document.getElementById('hdr-sub').textContent =
+      `Job ${jobId} · ${logCount} events · ${ssCount} screenshot${ssCount !== 1 ? 's' : ''}` +
+      (D.truncated ? ` (showing last 500 of ${D.totalLines})` : '');
+
+    renderDashboard();
+
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    const banner = document.getElementById('error-banner');
+    banner.style.display = 'block';
+    banner.textContent = `Failed to load job "${jobId}": ${err.message}`;
+    // Fall through to manual upload
+    document.getElementById('hdr-sub').textContent = 'Could not auto-load job — use manual upload below';
+    document.getElementById('upload-section').style.display = 'block';
+  }
+}
+
+/* ═══════════════════════════ RENDER ════════════════════════════════ */
+function renderDashboard() {
+  document.getElementById('dashboard').style.display = 'block';
+  renderStats();
+  renderOutputs();
+  renderTimeline();
+  renderCharts();
+  renderGallery();
+  renderHITL();
+  renderEventLog();
+}
+
+/* ═══════════════════════════ STATS ═════════════════════════════════ */
+function renderStats() {
+  const ev   = D.logEntries;
+  const done = ev.find(e => e.event === 'replay_complete');
+  const bo   = ev.find(e => e.event === 'business_outcome_detected');
+  const err  = ev.find(e => e.event === 'replay_error' || e.event === 'step_failed');
+  const hitl = ev.filter(e => e.event === 'hitl_resolved' || e.event === 'hitl_escalation').length
+               + D.interventions.length;
+  const steps   = ev.filter(e => e.event === 'step_done').length;
+  const retries = ev.filter(e => e.event === 'step_retry').length;
+
+  // Duration from first to last timestamped event
+  const ts = ev.filter(e => e.ts || e.timestamp).map(e => new Date(e.ts || e.timestamp));
+  const dur = ts.length >= 2 ? ((Math.max(...ts) - Math.min(...ts)) / 1000).toFixed(1) + 's' : '—';
+
+  const outcome = done ? 'success' : bo ? 'business_outcome' : err ? 'hard_failure' : '—';
+  const outCls  = done ? 'c-s' : bo ? 'c-w' : err ? 'c-d' : '';
+
+  document.getElementById('stat-row').innerHTML = [
+    sc('Outcome',        outcome,   '',               outCls),
+    sc('Steps',          steps,     retries + ' retries', 'c-i'),
+    sc('HITL',           hitl,      hitl ? 'escalations' : 'none', hitl ? 'c-h' : ''),
+    sc('Duration',       dur,       '',               ''),
+    sc('Screenshots',    D.screenshots.length, '', D.screenshots.length ? 'c-i' : ''),
+    sc('Log events',     ev.length, D.truncated ? `of ${D.totalLines}` : '', ''),
+  ].join('');
+}
+
+function sc(label, val, sub, cls) {
+  return `<div class="stat">
+    <div class="stat-label">${label}</div>
+    <div class="stat-val ${cls}" style="font-size:${String(val).length > 8 ? '16px' : '22px'}">${h(String(val))}</div>
+    ${sub ? `<div class="stat-sub">${h(sub)}</div>` : ''}
+  </div>`;
+}
+
+/* ═══════════════════════════ OUTPUTS ═══════════════════════════════ */
+function renderOutputs() {
+  const done = D.logEntries.find(e => e.event === 'replay_complete' || e.event === 'goal_complete');
+  const outs = done?.outputs || done?.extracted_outputs;
+  const sec  = document.getElementById('outputs-section');
+  if (!outs || !Object.keys(outs).length) { sec.innerHTML = ''; return; }
+
+  const items = Object.entries(outs).map(([k, v]) => {
+    const isNull = v === null || v === undefined;
+    return `<div class="out-item">
+      <div class="out-key">${h(k)}</div>
+      <div class="out-val ${isNull ? 'nv' : ''}">${isNull ? 'null' : h(String(v))}</div>
+    </div>`;
+  }).join('');
+
+  sec.innerHTML = `
+    <div class="sec">Extracted Outputs <span class="sec-line"></span></div>
+    <div class="outputs-panel"><div class="outputs-grid">${items}</div></div>`;
+}
+
+/* ═══════════════════════════ TIMELINE ══════════════════════════════ */
+function renderTimeline() {
+  const steps = getSteps(D.logEntries);
+  const sec   = document.getElementById('timeline-section');
+
+  if (!steps.length) {
+    sec.innerHTML = `<div class="timeline">${empty('No step events', 'Load a replay log to see the step timeline.')}</div>`;
+    return;
+  }
+
+  const maxD = Math.max(...steps.map(s => s.dur), 1);
+  const barC = s => {
+    if (!s.success) return '#f85149';
+    return { navigate:'#818cf8', type:'#58a6ff', click:'#3fb950',
+             extract:'#d29922', assert:'#bc8cff' }[s.action] || '#7d8590';
+  };
+
+  const rows = steps.map(s => `
+    <div class="tl-row">
+      <span class="tl-step">${h(s.id)}</span>
+      <span><span class="ab ab-${s.action}">${h(s.action)}</span></span>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:${Math.max(1, s.dur/maxD*100)}%;background:${barC(s)};opacity:.8"></div></div>
+      <span class="tl-dur">${s.dur > 0 ? s.dur + 'ms' : '—'}</span>
+      <span><span class="tag ${s.success ? 's' : 'd'}">${s.success ? 'ok' : 'failed'}</span></span>
+      <span class="tl-desc" title="${h(s.desc)}">${h(s.desc)}</span>
+    </div>`).join('');
+
+  const bo = D.logEntries.find(e => e.event === 'business_outcome_detected');
+  const boR = bo ? `<div class="tl-row" style="background:rgba(210,153,34,.04)">
+    <span class="tl-step">BO</span><span><span class="tag w">business</span></span>
+    <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#d29922;opacity:.2"></div></div>
+    <span class="tl-dur">—</span><span></span>
+    <span class="tl-desc">${h((bo.outcome || '').split('\n')[0])}</span></div>` : '';
+
+  const hitlEv = D.logEntries.find(e => e.event === 'hitl_resolved');
+  const hitlR  = hitlEv ? `<div class="tl-row" style="background:rgba(188,140,255,.04)">
+    <span class="tl-step">HITL</span><span><span class="tag h">escalated</span></span>
+    <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#bc8cff;opacity:.2"></div></div>
+    <span class="tl-dur">—</span><span></span>
+    <span class="tl-desc">Resolved · ${h(hitlEv.url_after || '')}</span></div>` : '';
+
+  const doneEv = D.logEntries.find(e => e.event === 'replay_complete' || e.event === 'goal_complete');
+  const doneR  = doneEv ? `<div class="tl-row" style="background:rgba(63,185,80,.04)">
+    <span class="tl-step">✓</span><span><span class="tag s">done</span></span>
+    <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#3fb950;opacity:.3"></div></div>
+    <span class="tl-dur">—</span><span></span>
+    <span class="tl-desc">${h(JSON.stringify(doneEv.outputs || {}).slice(0, 120))}</span></div>` : '';
+
+  sec.innerHTML = `<div class="timeline">
+    <div class="tl-hdr"><span>STEP · ACTION · DURATION · STATUS · NOTES</span>
+    <span>${steps.length} steps</span></div>
+    ${rows}${boR}${hitlR}${doneR}
+  </div>`;
+}
+
+/* ═══════════════════════════ CHARTS ════════════════════════════════ */
+function renderCharts() {
+  const steps = getSteps(D.logEntries);
+  const gc = 'rgba(255,255,255,.05)', tc = '#7d8590';
+
+  ['c-dur', 'c-act'].forEach(id => { const c = Chart.getChart(id); if (c) c.destroy(); });
+
+  if (steps.length) {
+    new Chart(document.getElementById('c-dur'), {
+      type: 'bar',
+      data: {
+        labels: steps.map(s => s.id),
+        datasets: [{
+          data: steps.map(s => s.dur),
+          backgroundColor: steps.map(s => s.success ? 'rgba(99,102,241,.6)' : 'rgba(248,81,73,.6)'),
+          borderRadius: 3, borderSkipped: false,
+        }],
+      },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c => ` ${c.raw}ms`}}},
+        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},
+                y:{ticks:{color:tc,font:{size:10}},grid:{color:gc},
+                   title:{display:true,text:'ms',color:tc,font:{size:10}}}}}
+    });
+  }
+
+  const counts = {};
+  D.logEntries.forEach(e => {
+    if (e.event === 'step_done') { const a = e.result?.action || 'unknown'; counts[a] = (counts[a] || 0) + 1; }
+    if (e.event === 'tool_call') { const a = e.tool || 'unknown'; counts[a] = (counts[a] || 0) + 1; }
+  });
+  const labs = Object.keys(counts);
+  if (labs.length) {
+    const pal = ['#818cf8','#58a6ff','#3fb950','#d29922','#bc8cff','#f85149','#7d8590'];
+    new Chart(document.getElementById('c-act'), {
+      type: 'doughnut',
+      data: { labels: labs, datasets:[{ data: labs.map(k => counts[k]),
+        backgroundColor: labs.map((_,i) => pal[i % pal.length]),
+        borderColor:'#161b22', borderWidth:2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+        plugins:{ legend:{display:true,position:'right',labels:{color:tc,font:{size:10},boxWidth:10,padding:8}}}}
+    });
+  }
+}
+
+/* ═══════════════════════════ GALLERY ═══════════════════════════════ */
+function renderGallery() {
+  const sec = document.getElementById('gallery-section');
+  const container = document.getElementById('gallery');
+  if (!D.screenshots.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  container.innerHTML = D.screenshots.map(img => {
+    const fn = img.name.toLowerCase();
+    const isHITL    = fn.includes('hitl') || fn.includes('annotated');
+    const isFailure = fn.includes('failure') || fn.includes('fail') || fn.includes('error');
+    const isReplay  = fn.includes('replay');
+    const cls = isHITL ? 'hitl-img' : isFailure ? 'failure-img' : isReplay ? 'success-img' : '';
+    const kb  = ((img.size || 0) / 1024).toFixed(1);
+    const badge = isHITL ? `<span class="tag h">HITL</span>`
+                : isFailure ? `<span class="tag d">failure</span>`
+                : isReplay  ? `<span class="tag s">replay</span>` : '';
+    return `<div class="gallery-item ${cls}">
+      <div class="img-header">
+        <span class="img-name">${h(img.name)}</span>
+        <span class="img-meta">${kb} KB</span>
+        ${badge}
+      </div>
+      <div class="img-wrap" onclick="openLB('${img.src.replace(/'/g,"\\'")}','${h(img.name)}')">
+        <img src="${img.src}" alt="${h(img.name)}" loading="lazy">
+        <div class="img-expand-hint">click to enlarge</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════ HITL ══════════════════════════════════ */
+function renderHITL() {
+  const sec = document.getElementById('hitl-section');
+  if (!D.interventions.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  document.getElementById('hitl-cards').innerHTML = D.interventions.map(req => `
+    <div class="hitl-card">
+      <div class="hitl-hdr">
+        <span class="hitl-badge">🛑 HITL Intervention</span>
+        <span class="tag ${req.status === 'resolved' ? 's' : 'w'}">${req.status}</span>
+        <span class="tag m">${(req.severity || 'medium').toUpperCase()}</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--muted)">
+          ${(req.created_at || '').slice(0,19).replace('T',' ')} UTC
+        </span>
+      </div>
+      <div class="hitl-grid">
+        <span class="hk">Request ID</span><span class="hv">${h(req.request_id || '—')}</span>
+        <span class="hk">Stuck at step</span><span class="hv">${h(req.current_step_id || '—')}</span>
+        <span class="hk">URL</span><span class="hv">${h(req.current_url || '—')}</span>
+        <span class="hk">Human notes</span><span class="hv">${h(req.human_notes || '(none)')}</span>
+        <span class="hk" style="grid-column:1/-1;margin-top:4px">Reason</span>
+        <div class="hitl-reason">${h(req.reason || '—')}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ═══════════════════════════ EVENT LOG ══════════════════════════════ */
+function renderEventLog() {
+  const sec = document.getElementById('log-section');
+  if (!D.logEntries.length) {
+    sec.innerHTML = `<div class="log-card">${empty('No events', 'Load a log file to see events.')}</div>`;
+    return;
+  }
+
+  const cats = ['all','step','llm','hitl','error','output'];
+  const cat = ev => {
+    const e = ev.event || '';
+    if (e.includes('step')) return 'step';
+    if (e.includes('llm') || e.includes('tool') || e.includes('observed')) return 'llm';
+    if (e.includes('hitl') || e.includes('intervention')) return 'hitl';
+    if (e.includes('error') || e.includes('fail') || e.includes('blocked')) return 'error';
+    if (e.includes('output') || e.includes('extract') || e.includes('complete') || e.includes('goal')) return 'output';
+    return 'other';
+  };
+  const cls = ev => {
+    const e = ev.event || '';
+    if (e.includes('error') || e.includes('fail')) return 'ev-error';
+    if (e.includes('retry') || e.includes('recover')) return 'ev-warn';
+    if (e.includes('hitl') || e.includes('intervention')) return 'ev-hitl';
+    if (e.includes('complete') || e.includes('extracted') || e.includes('goal_complete')) return 'ev-done';
+    return 'ev-default';
+  };
+  const ts = ev => {
+    const t = ev.ts || ev.timestamp || '';
+    if (!t) return '—';
+    try { return new Date(t).toISOString().slice(11, 23); } catch { return t.slice(0, 12); }
+  };
+  const dataStr = ev => {
+    const skip = new Set(['event','ts','timestamp']);
+    return Object.entries(ev).filter(([k]) => !skip.has(k))
+      .map(([k,v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v,null,2) : String(v)}`).join('\n');
+  };
+
+  const rows = D.logEntries.map((ev, i) => {
+    const full = dataStr(ev);
+    const long = full.length > 100 || full.includes('\n');
+    return `<div class="log-row ${cls(ev)}" data-cat="${cat(ev)}" id="lr${i}" onclick="togLog(${i})">
+      <span class="log-ts">${ts(ev)}</span>
+      <span class="log-event">${h(ev.event || '?')}</span>
+      <span class="log-data" id="ld${i}">${h(full) || '<span style="opacity:.3">—</span>'}</span>
+      ${long ? `<button class="log-expand" id="le${i}" onclick="event.stopPropagation();togLog(${i})">expand</button>` : '<span></span>'}
+    </div>`;
+  }).join('');
+
+  const filts = cats.map(c =>
+    `<button class="filt ${c === 'all' ? 'on' : ''}" data-f="${c}" onclick="applyF(this)">${c}</button>`
+  ).join('');
+
+  const truncNote = D.truncated
+    ? `<span style="margin-left:auto;font-size:10px;color:var(--warn)">
+         Showing last ${D.logEntries.length} of ${D.totalLines} events
+       </span>`
+    : `<span style="margin-left:auto;font-size:10px;color:var(--muted)">${D.logEntries.length} events</span>`;
+
+  sec.innerHTML = `<div class="log-card">
+    <div class="log-toolbar">
+      <span class="log-label">Filter</span>${filts}${truncNote}
+    </div>
+    <div class="log-scroll" id="log-scroll">${rows}</div>
+  </div>`;
+}
+
+function togLog(i) {
+  const row = document.getElementById('lr' + i);
+  const btn = document.getElementById('le' + i);
+  if (!row) return;
+  const ex = row.classList.toggle('expanded');
+  if (btn) btn.textContent = ex ? 'collapse' : 'expand';
+}
+function applyF(btn) {
+  document.querySelectorAll('.filt').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const f = btn.dataset.f;
+  document.querySelectorAll('#log-scroll .log-row').forEach(r => {
+    r.style.display = (f === 'all' || r.dataset.cat === f) ? '' : 'none';
+  });
+}
+
+/* ═══════════════════════════ UPLOAD (FALLBACK) ══════════════════════ */
+const upPanels = ['up-logs','up-screenshots','up-interventions'];
+const upTabs   = document.querySelectorAll('.upload-tab');
+
+function switchUpTab(i) {
+  upTabs.forEach((t, j) => t.classList.toggle('active', i === j));
+  upPanels.forEach((id, j) => {
+    document.getElementById(id).classList.toggle('active', i === j);
+    document.getElementById(id).style.display = i === j ? 'block' : 'none';
+  });
+  // Fix: show first panel only
+  upPanels.forEach((id, j) => {
+    document.getElementById(id).style.display = i === j ? 'block' : 'none';
+  });
+}
+
+function dzOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag-over'); }
+function dzLeave(id)    { document.getElementById(id).classList.remove('drag-over'); }
+function dzDrop(e, id, type) {
+  e.preventDefault();
+  document.getElementById(id).classList.remove('drag-over');
+  handleUpload(e.dataTransfer.files, type);
+}
+
+function handleUpload(files, type) {
+  Promise.all(Array.from(files).map(f => readUploadedFile(f, type))).then(() => {
+    renderDashboard();
+  });
+}
+
+function readUploadedFile(f, type) {
+  return new Promise(res => {
+    if (type === 'image') {
+      const r = new FileReader();
+      r.onload = e => {
+        D.screenshots.push({ name: f.name, src: e.target.result, size: f.size });
+        res();
+      };
+      r.readAsDataURL(f);
+      return;
+    }
+    const r = new FileReader();
+    r.onload = e => {
+      const text = e.target.result;
+      if (type === 'intervention') {
+        try { D.interventions.push(JSON.parse(text)); } catch {}
+      } else {
+        // log — NDJSON or summary JSON
+        if (f.name.endsWith('.log')) {
+          const lines = text.trim().split('\n');
+          const MAX = 500;
+          if (lines.length > MAX) {
+            const guard = document.getElementById('log-size-guard');
+            if (guard) { guard.style.display = 'block'; guard.textContent = `⚠ Large file: showing last 500 of ${lines.length} events`; }
+          }
+          lines.slice(-MAX).forEach(l => {
+            try { D.logEntries.push(JSON.parse(l)); } catch {}
+          });
+        } else if (f.name.endsWith('.json')) {
+          try {
+            const obj = JSON.parse(text);
+            if (obj.log_entries) D.logEntries.push(...obj.log_entries);
+            else if (obj.request_id) D.interventions.push(obj);
+          } catch {}
+        }
+      }
+      res();
+    };
+    r.readAsText(f);
+  });
+}
+
+function toggleUpload() {
+  const sec = document.getElementById('upload-section');
+  sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+}
+
+/* ═══════════════════════════ HELPERS ════════════════════════════════ */
+function getSteps(events) {
+  const starts = {}, out = [];
+  events.forEach(e => {
+    if (e.event === 'step_start') starts[e.step_id] = new Date(e.ts || e.timestamp || 0);
+    if (e.event === 'step_done') {
+      const s = starts[e.step_id];
+      const dur = s ? Math.max(0, Math.round(new Date(e.ts || e.timestamp || 0) - s)) : 0;
+      out.push({
+        id: e.step_id || '?',
+        action: e.result?.action || '?',
+        success: e.result?.success ?? true,
+        desc: e.result?.strategy_used ? 'locator: ' + e.result.strategy_used
+              : e.result?.url || e.result?.typed || e.result?.error?.slice(0, 60) || '',
+        dur,
+      });
+    }
+  });
+  return out;
+}
+
+function empty(title, sub) {
+  return `<div class="empty">
+    <div class="empty-icon">∅</div>
+    <div class="empty-title">${h(title)}</div>
+    <div class="empty-sub">${h(sub)}</div>
+  </div>`;
+}
+
+function h(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openLB(src, caption) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lb-caption').textContent = caption;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLB() { document.getElementById('lightbox').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+</script>
+</body>
+</html>
