@@ -62,6 +62,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger("main")
 
+# Suppress noisy health-check lines from Werkzeug access log
+class _HealthFilter(logging.Filter):
+    def filter(self, record):
+        m = record.getMessage()
+        return "/health" not in m and "/api/health-proxy" not in m
+
+logging.getLogger("werkzeug").addFilter(_HealthFilter())
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # Server helpers

@@ -2,11 +2,10 @@
 ui/chat_app.py
 --------------
 User-facing chat server (port 5000).
-Receives natural-language messages, routes them to capabilities,
-runs the replay engine in a background thread, and returns results.
 """
 
 from __future__ import annotations
+import base64
 import json
 import logging
 import os
@@ -28,12 +27,22 @@ from engine.engine import ReplayEngine
 logger = logging.getLogger(__name__)
 app    = Flask(__name__, template_folder=os.path.join(_UI_DIR, "templates"))
 
-EVIDENCE_DIR  = os.path.join(_SRC, "..", "evidence")
-BANKING_URL   = "http://localhost:8080"
+EVIDENCE_DIR = os.path.join(_SRC, "..", "evidence")
+JOBS_DIR     = os.path.join(EVIDENCE_DIR, "jobs")
+BANKING_URL  = "http://localhost:8080"
 
-# job_id → result dict
 _jobs: dict[str, dict] = {}
 _lock = threading.Lock()
+
+
+# ── Suppress /health and /api/health-proxy from Werkzeug access log ────────
+
+class _HealthFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        return "/health" not in msg and "/api/health-proxy" not in msg
+
+logging.getLogger("werkzeug").addFilter(_HealthFilter())
 
 
 # ── Pages ────────────────────────────────────────────────────────────────
@@ -41,6 +50,11 @@ _lock = threading.Lock()
 @app.route("/")
 def index():
     return render_template("chat.html", capabilities=list_capabilities())
+
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 
 # ── Chat API ──────────────────────────────────────────────────────────────
@@ -55,7 +69,6 @@ def chat():
     job_id = str(uuid.uuid4())
     cap    = match(message)
 
-    # No capability matched
     if cap is None:
         return jsonify({
             "job_id": job_id,
@@ -68,7 +81,6 @@ def chat():
             ),
         })
 
-    # Missing required parameters
     if cap.missing:
         prompts = {
             "member_id":  "Which member? Use their name (Alice, Bob…) or their 6-digit ID.",
@@ -82,10 +94,8 @@ def chat():
             "missing": cap.missing,
         })
 
-    # Build the human-readable subject label (name preferred over ID)
     subject_label = _subject_label(cap.parameters)
 
-    # Already-frozen / already-closed guard (instant check before running engine)
     if cap.name == "update_account_status":
         warning = _check_already_same_status(cap.parameters)
         if warning:
@@ -96,7 +106,6 @@ def chat():
                 "warning": warning,
             })
 
-    # Kick off engine in background
     with _lock:
         _jobs[job_id] = {"status": "running", "capability": cap.name, "started": time.time()}
 
@@ -124,11 +133,87 @@ def job_status(job_id: str):
     return jsonify(job)
 
 
-# ── Proxy endpoints (avoids CORS issues from the browser) ─────────────────
+@app.route("/api/job/<job_id>/details")
+def job_details(job_id: str):
+    """
+    Return everything about a completed job:
+    - the log entries
+    - screenshots as base64
+    - intervention JSONs
+    Used by the dashboard when opened with ?job={job_id}.
+    """
+    with _lock:
+        job = dict(_jobs.get(job_id, {}))
+    if not job:
+        return jsonify({"error": "unknown job"}), 404
+
+    job_dir = os.path.join(JOBS_DIR, job_id)
+
+    # ── Log entries ───────────────────────────────────────────────────────
+    log_entries = job.get("log_entries", [])
+    if not log_entries:
+        # Try reading from disk if not in memory
+        log_path = os.path.join(job_dir, "replay.log")
+        if os.path.exists(log_path):
+            log_entries = []
+            with open(log_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            log_entries.append(json.loads(line))
+                        except Exception:
+                            pass
+
+    # ── Screenshots as base64 ─────────────────────────────────────────────
+    screenshots = []
+    ss_dir = os.path.join(job_dir, "screenshots")
+    if os.path.isdir(ss_dir):
+        for fname in sorted(os.listdir(ss_dir)):
+            if fname.lower().endswith((".png", ".jpg", ".jpeg")):
+                fpath = os.path.join(ss_dir, fname)
+                try:
+                    with open(fpath, "rb") as f:
+                        b64 = base64.b64encode(f.read()).decode()
+                    screenshots.append({
+                        "name": fname,
+                        "size": os.path.getsize(fpath),
+                        "data": f"data:image/png;base64,{b64}",
+                    })
+                except Exception:
+                    pass
+
+    # ── Intervention JSONs ────────────────────────────────────────────────
+    interventions = []
+    iv_dir = os.path.join(job_dir, "interventions")
+    if os.path.isdir(iv_dir):
+        for fname in sorted(os.listdir(iv_dir)):
+            if fname.endswith(".json"):
+                try:
+                    with open(os.path.join(iv_dir, fname)) as f:
+                        interventions.append(json.load(f))
+                except Exception:
+                    pass
+
+    return jsonify({
+        "job_id":       job_id,
+        "status":       job.get("status"),
+        "outcome":      job.get("outcome"),
+        "capability":   job.get("capability"),
+        "duration":     job.get("duration"),
+        "steps":        job.get("steps"),
+        "outputs":      job.get("outputs", {}),
+        "reply":        job.get("reply", ""),
+        "log_entries":  log_entries,
+        "screenshots":  screenshots,
+        "interventions": interventions,
+    })
+
+
+# ── Proxy endpoints ────────────────────────────────────────────────────────
 
 @app.route("/api/audit-log")
 def audit_log():
-    """Proxy to banking app — avoids CORS issue when browser calls it directly."""
     try:
         with urllib.request.urlopen(f"{BANKING_URL}/api/audit-log", timeout=3) as r:
             return app.response_class(r.read(), mimetype="application/json")
@@ -138,7 +223,6 @@ def audit_log():
 
 @app.route("/api/health-proxy")
 def health_proxy():
-    """Proxy health check so the browser doesn't hit localhost:8080 directly."""
     try:
         with urllib.request.urlopen(f"{BANKING_URL}/health", timeout=2) as r:
             return app.response_class(r.read(), mimetype="application/json")
@@ -149,8 +233,12 @@ def health_proxy():
 # ── Background worker ─────────────────────────────────────────────────────
 
 def _run(job_id: str, cap, subject_label: str):
+    # Per-job evidence directory
+    job_dir = os.path.join(JOBS_DIR, job_id)
+    os.makedirs(job_dir, exist_ok=True)
+
     try:
-        engine   = ReplayEngine(
+        engine = ReplayEngine(
             evidence_dir=EVIDENCE_DIR,
             headless=True,
             max_retries_per_step=2,
@@ -165,21 +253,24 @@ def _run(job_id: str, cap, subject_label: str):
         result = engine.run(
             artifact=artifact,
             parameters=params,
-            log_suffix=f"chat_{job_id[:8]}",
+            log_suffix="run",           # file becomes replay_run.log inside job_dir
             non_interactive=True,
+            job_dir=job_dir,            # all evidence scoped to this job
         )
 
         with _lock:
             _jobs[job_id] = {
-                "status":   "done",
-                "outcome":  result.outcome_type,
-                "success":  result.success,
-                "outputs":  result.outputs,
+                "status":        "done",
+                "outcome":       result.outcome_type,
+                "success":       result.success,
+                "outputs":       result.outputs,
                 "business_outcome": result.business_outcome,
-                "error":    result.error,
-                "duration": round(result.duration_seconds, 2),
-                "steps":    result.steps_completed,
-                "reply":    _format_reply(cap.name, result, params, subject_label),
+                "error":         result.error,
+                "duration":      round(result.duration_seconds, 2),
+                "steps":         result.steps_completed,
+                "reply":         _format_reply(cap.name, result, params, subject_label),
+                "log_entries":   result.log_entries,
+                "job_dir":       job_dir,
             }
     except Exception as e:
         logger.exception(f"[chat] Job {job_id} failed")
@@ -190,14 +281,14 @@ def _run(job_id: str, cap, subject_label: str):
                 "success": False,
                 "error":   str(e),
                 "reply":   f"❌ Automation error: {e}",
+                "log_entries": [],
+                "job_dir": job_dir,
             }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 
 def _subject_label(params: dict) -> str:
-    """Return a human-friendly label: prefer resolved name over raw ID."""
-    # Try to get the actual name from the banking app
     mid = params.get("member_id", "")
     try:
         with urllib.request.urlopen(f"{BANKING_URL}/api/member/{mid}", timeout=2) as r:
@@ -211,10 +302,6 @@ def _subject_label(params: dict) -> str:
 
 
 def _check_already_same_status(params: dict) -> str | None:
-    """
-    If the requested new_status matches the current status, return a warning string.
-    Returns None if the update should proceed.
-    """
     mid        = params.get("member_id", "")
     new_status = params.get("new_status", "")
     if not mid or not new_status:
@@ -225,17 +312,13 @@ def _check_already_same_status(params: dict) -> str | None:
         current = data.get("account_status", "")
         name    = data.get("name", f"Member {mid}")
         if current.lower() == new_status.lower():
-            return (
-                f"{name}'s account is already {current}. "
-                "No changes were made."
-            )
+            return f"{name}'s account is already {current}. No changes were made."
     except Exception:
         pass
     return None
 
 
 def _patch_update_url(artifact, params: dict):
-    """Replace {member_id} placeholder in the navigate step with the real ID."""
     mid = params.get("member_id", "")
     for step in artifact.steps:
         if step.action == "navigate" and step.input_value and "{member_id}" in step.input_value:
@@ -247,38 +330,26 @@ def _patch_update_url(artifact, params: dict):
 def _format_reply(capability: str, result, params: dict, subject_label: str) -> str:
     if result.outcome_type == "business_outcome":
         return f"⚑ {result.business_outcome}"
-
     if result.outcome_type == "hard_failure":
         step = result.failed_step_id or "unknown"
         return f"❌ Automation failed at step `{step}`.\n{result.error or ''}"
-
     if capability == "check_member_balance":
         name    = result.outputs.get("member_name") or subject_label
         balance = result.outputs.get("balance")
         status  = result.outputs.get("account_status", "")
         bal_str = f"${balance:,.2f}" if isinstance(balance, (int, float)) else str(balance)
-        return (
-            f"✅ **{name}**\n"
-            f"• Balance: **{bal_str}**\n"
-            f"• Status: **{status}**"
-        )
-
+        return f"✅ **{name}**\n• Balance: **{bal_str}**\n• Status: **{status}**"
     if capability == "update_account_status":
         name       = result.outputs.get("member_name") or subject_label
         new_status = result.outputs.get("updated_status") or params.get("new_status", "")
-        return (
-            f"✅ Account updated for **{name}**.\n"
-            f"• New status: **{new_status}**"
-        )
-
+        return f"✅ Account updated for **{name}**.\n• New status: **{new_status}**"
     return f"✅ Done. {result.outputs}"
 
-
-# ── Entry point ───────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     os.makedirs(EVIDENCE_DIR, exist_ok=True)
+    os.makedirs(JOBS_DIR, exist_ok=True)
     print("\n  Chat UI → http://localhost:5000")
     print("  Banking app must be running on http://localhost:8080\n")
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)

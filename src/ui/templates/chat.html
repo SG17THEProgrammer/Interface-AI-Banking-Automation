@@ -1,803 +1,1080 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MemberLink Assistant</title>
-<style>
-  /* ── Reset & tokens ─────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemberLink Assistant</title>
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  :root {
-    --brand:        #1a3a6b;
-    --brand-dark:   #122850;
-    --brand-btn:    #2a5aab;
-    --brand-light:  #eef3fb;
-    --bg:           #f0f2f7;
-    --surface:      #ffffff;
-    --border:       #dde2ee;
-    --border-light: #eaecf4;
-    --text:         #1c2033;
-    --text-muted:   #6b7489;
-    --success:      #16803c;
-    --warn:         #b45309;
-    --danger:       #b91c1c;
-    --radius-sm:    6px;
-    --radius-md:    12px;
-    --radius-lg:    20px;
-    --shadow-sm:    0 1px 3px rgba(0,0,0,.08);
-    --shadow-md:    0 4px 16px rgba(0,0,0,.10);
-    --font:         -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    --mono:         'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  }
+    :root {
+      --brand: #1a3a6b;
+      --brand-dark: #122850;
+      --brand-btn: #2a5aab;
+      --brand-light: #eef3fb;
+      --bg: radial-gradient(circle, #2e62ab 0%, #1b3f75 70%, #0d213f 100%);
+      --surface: #ffffff;
+      --border: #dde2ee;
+      --border-light: #eaecf4;
+      --text: #1c2033;
+      --text-muted: #6b7489;
+      --success: #16803c;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, .08);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, .10);
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
 
-  html, body {
-    height: 100%;
-    font-family: var(--font);
-    font-size: 14px;
-    color: var(--text);
-    background: var(--bg);
-  }
+    html,
+    body {
+      height: 100%;
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+    }
 
-  /* ── App shell ──────────────────────────────────────────────────────── */
-  .app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    max-width: 860px;
-    margin: 0 auto;
-    background: var(--surface);
-    box-shadow: 0 0 0 1px var(--border), var(--shadow-md);
-  }
+    /* ── App shell ──────────────────────────────────────────────────────── */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--surface);
+      box-shadow: 0 0 0 1px var(--border), var(--shadow-md);
+    }
 
-  /* ── Header ─────────────────────────────────────────────────────────── */
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 20px;
-    background: var(--brand);
-    color: #fff;
-    flex-shrink: 0;
-  }
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--brand);
+      color: #fff;
+      flex-shrink: 0;
+    }
 
-  .header-logo {
-    width: 38px;
-    height: 38px;
-    background: rgba(255,255,255,.18);
-    border-radius: var(--radius-sm);
-    display: grid;
-    place-items: center;
-    font-size: 17px;
-    font-weight: 800;
-    flex-shrink: 0;
-  }
+    .header-logo {
+      width: 38px;
+      height: 38px;
+      background: rgba(255, 255, 255, .18);
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      font-size: 17px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
 
-  .header-copy { flex: 1; min-width: 0; }
-  .header-copy h1 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
-  .header-copy p  { font-size: 11px; color: rgba(255,255,255,.60); margin-top: 2px; }
+    .header-copy {
+      flex: 1;
+      min-width: 0;
+    }
 
-  .header-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: rgba(255,255,255,.70);
-    white-space: nowrap;
-  }
+    .header-copy h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
 
-  .status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #4ade80;
-    box-shadow: 0 0 6px #4ade80;
-    flex-shrink: 0;
-  }
-  .status-dot.offline { background: #f87171; box-shadow: 0 0 6px #f87171; }
+    .header-copy p {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .60);
+      margin-top: 2px;
+    }
 
-  .audit-btn {
-    margin-left: 10px;
-    padding: 4px 10px;
-    border-radius: 100px;
-    border: 1px solid rgba(255,255,255,.30);
-    background: rgba(255,255,255,.10);
-    color: rgba(255,255,255,.85);
-    font-size: 11px;
-    font-family: var(--font);
-    cursor: pointer;
-    transition: background .15s;
-  }
-  .audit-btn:hover { background: rgba(255,255,255,.20); }
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, .70);
+      white-space: nowrap;
+    }
 
-  /* ── Quick-action strip ─────────────────────────────────────────────── */
-  .pill-strip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 20px;
-    border-bottom: 1px solid var(--border-light);
-    background: #f7f9fd;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-  }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 6px #4ade80;
+      flex-shrink: 0;
+    }
 
-  .pill-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-right: 2px; text-transform: uppercase; letter-spacing: .05em; }
+    .status-dot.offline {
+      background: #f87171;
+      box-shadow: 0 0 6px #f87171;
+    }
 
-  .pill {
-    padding: 4px 12px;
-    border-radius: 100px;
-    border: 1px solid #c9d8f2;
-    background: var(--brand-light);
-    color: var(--brand);
-    font-size: 11.5px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all .15s;
-    white-space: nowrap;
-  }
-  .pill:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .audit-btn {
+      margin-left: 10px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, .30);
+      background: rgba(255, 255, 255, .10);
+      color: rgba(255, 255, 255, .85);
+      font-size: 11px;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background .15s;
+    }
 
-  /* ── Chat scroll area ───────────────────────────────────────────────── */
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px 20px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    scroll-behavior: smooth;
-  }
+    .audit-btn:hover {
+      background: rgba(255, 255, 255, .20);
+    }
 
-  .messages::-webkit-scrollbar { width: 4px; }
-  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    /* ── Quick-action strip ─────────────────────────────────────────────── */
+    .pill-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border-light);
+      background: #f7f9fd;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
 
-  /* ── Message rows ───────────────────────────────────────────────────── */
-  .msg-row {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .msg-row.user {
-    flex-direction: row-reverse;
-  }
+    .pill-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-right: 2px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
 
-  .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-size: 13px;
-    font-weight: 700;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-  .avatar.bot  { background: var(--brand); color: #fff; }
-  .avatar.user { background: #dce6f8; color: var(--brand); }
+    .pill {
+      padding: 4px 12px;
+      border-radius: 100px;
+      border: 1px solid #c9d8f2;
+      background: var(--brand-light);
+      color: var(--brand);
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
 
-  .msg-body { max-width: 78%; display: flex; flex-direction: column; gap: 4px; }
-  .msg-row.user .msg-body { align-items: flex-end; }
+    .pill:hover {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
 
-  .bubble {
-    padding: 11px 15px;
-    border-radius: var(--radius-lg);
-    line-height: 1.6;
-    font-size: 13.5px;
-    box-shadow: var(--shadow-sm);
-  }
+    /* ── Chat scroll area ───────────────────────────────────────────────── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scroll-behavior: smooth;
+      background-color: #EAF2FC;
+    }
 
-  .msg-row.bot  .bubble {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-top-left-radius: var(--radius-sm);
-    color: var(--text);
-  }
-  .msg-row.user .bubble {
-    background: var(--brand);
-    color: #fff;
-    border-top-right-radius: var(--radius-sm);
-  }
+    .messages::-webkit-scrollbar {
+      width: 4px;
+    }
 
-  .bubble b, .bubble strong { font-weight: 600; }
-  .bubble code {
-    font-family: var(--mono);
-    font-size: 12px;
-    background: rgba(0,0,0,.06);
-    padding: 1px 5px;
-    border-radius: 4px;
-  }
-  .msg-row.user .bubble code { background: rgba(255,255,255,.15); }
+    .messages::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
 
-  .bullet-line {
-    display: flex;
-    gap: 8px;
-    padding: 2px 0;
-    align-items: baseline;
-  }
-  .bullet-line::before {
-    content: '•';
-    color: #93acd9;
-    font-size: 10px;
-    flex-shrink: 0;
-    margin-top: 3px;
-  }
+    /* ── Message rows ───────────────────────────────────────────────────── */
+    .msg-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
 
-  .meta-line {
-    font-size: 10.5px;
-    color: var(--text-muted);
-    padding: 0 4px;
-  }
+    .msg-row.user {
+      flex-direction: row-reverse;
+    }
 
-  /* ── Result card ────────────────────────────────────────────────────── */
-  .result-card {
-    margin-top: 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-  }
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
 
-  .rc-header {
-    padding: 8px 14px;
-    background: var(--brand-light);
-    border-bottom: 1px solid var(--border);
-    font-size: 10.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: var(--brand);
-  }
+    .avatar.bot {
+      background: var(--brand);
+      color: #fff;
+    }
 
-  .rc-row {
-    display: flex;
-    align-items: center;
-    padding: 9px 14px;
-    border-bottom: 1px solid var(--border-light);
-    gap: 12px;
-  }
-  .rc-row:last-child { border-bottom: none; }
+    .avatar.user {
+      background: #dce6f8;
+      color: var(--brand);
+    }
 
-  .rc-key {
-    font-size: 11px;
-    color: var(--text-muted);
-    width: 120px;
-    flex-shrink: 0;
-    text-transform: capitalize;
-  }
+    .msg-body {
+      max-width: 78%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-  .rc-val {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .rc-val.c-active  { color: var(--success); }
-  .rc-val.c-frozen  { color: var(--warn); }
-  .rc-val.c-closed  { color: var(--danger); }
-  .rc-val.c-balance { color: var(--brand); font-variant-numeric: tabular-nums; }
+    .msg-row.user .msg-body {
+      align-items: flex-end;
+    }
 
-  /* ── Warning banner (already-frozen etc.) ───────────────────────────── */
-  .warn-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-top: 10px;
-    padding: 10px 14px;
-    background: #fffbeb;
-    border: 1px solid #f59e0b;
-    border-radius: var(--radius-md);
-    font-size: 12.5px;
-    color: #92400e;
-    line-height: 1.5;
-  }
-  .warn-banner .wi { font-size: 15px; flex-shrink: 0; }
+    .bubble {
+      padding: 11px 15px;
+      border-radius: var(--radius-lg);
+      line-height: 1.6;
+      font-size: 13.5px;
+      box-shadow: var(--shadow-sm);
+    }
 
-  /* ── Typing indicator ───────────────────────────────────────────────── */
-  .typing {
-    display: flex;
-    gap: 4px;
-    padding: 4px 2px;
-    align-items: center;
-  }
-  .typing span {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #bccde8;
-    animation: bounce .9s infinite;
-  }
-  .typing span:nth-child(2) { animation-delay: .15s; }
-  .typing span:nth-child(3) { animation-delay: .30s; }
-  @keyframes bounce {
-    0%,80%,100% { transform: translateY(0);   opacity: .4; }
-    40%          { transform: translateY(-5px); opacity: 1; }
-  }
+    .msg-row.bot .bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top-left-radius: var(--radius-sm);
+      color: var(--text);
+    }
 
-  /* ── Suggestion chips ───────────────────────────────────────────────── */
-  .suggestions {
-    padding: 4px 20px 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-  }
+    .msg-row.user .bubble {
+      background: var(--brand);
+      color: #fff;
+      border-top-right-radius: var(--radius-sm);
+    }
 
-  .sug {
-    padding: 6px 13px;
-    border-radius: 100px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text-muted);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all .15s;
-    line-height: 1.3;
-  }
-  .sug:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+    .bubble b,
+    .bubble strong {
+      font-weight: 600;
+    }
 
-  /* ── Input bar ──────────────────────────────────────────────────────── */
-  .input-bar {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    padding: 12px 20px 16px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-    flex-shrink: 0;
-  }
+    .bubble code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: rgba(0, 0, 0, .06);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
 
-  .input-wrap {
-    flex: 1;
-    display: flex;
-    align-items: flex-end;
-    background: var(--bg);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 9px 16px;
-    transition: border-color .15s;
-  }
-  .input-wrap:focus-within { border-color: var(--brand); background: #fff; }
+    .msg-row.user .bubble code {
+      background: rgba(255, 255, 255, .15);
+    }
 
-  textarea {
-    flex: 1;
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 13.5px;
-    font-family: var(--font);
-    color: var(--text);
-    resize: none;
-    max-height: 120px;
-    line-height: 1.5;
-  }
-  textarea::placeholder { color: #9faec5; }
+    .bullet-line {
+      display: flex;
+      gap: 8px;
+      padding: 2px 0;
+      align-items: baseline;
+    }
 
-  .send-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--brand);
-    border: none;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    color: #fff;
-    flex-shrink: 0;
-    transition: background .15s, transform .1s, opacity .15s;
-  }
-  .send-btn:hover:not(:disabled) { background: var(--brand-btn); }
-  .send-btn:active:not(:disabled) { transform: scale(.92); }
-  .send-btn:disabled { opacity: .35; cursor: default; }
+    .bullet-line::before {
+      content: '•';
+      color: #93acd9;
+      font-size: 10px;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
 
-  /* ── Audit modal ────────────────────────────────────────────────────── */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.45);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
+    .meta-line {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
 
-  .modal {
-    background: var(--surface);
-    border-radius: var(--radius-md);
-    width: min(580px, 94vw);
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 20px 60px rgba(0,0,0,.25);
-    overflow: hidden;
-  }
+    /* ── Result card ────────────────────────────────────────────────────── */
+    .result-card {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
 
-  .modal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .modal-head h2 { font-size: 15px; font-weight: 700; }
+    .rc-header {
+      padding: 8px 14px;
+      background: var(--brand-light);
+      border-bottom: 1px solid var(--border);
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--brand);
+    }
 
-  .modal-close {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    border: none;
-    background: var(--bg);
-    color: var(--text-muted);
-    font-size: 16px;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: background .15s;
-  }
-  .modal-close:hover { background: var(--border); }
+    .rc-row {
+      display: flex;
+      align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border-light);
+      gap: 12px;
+    }
 
-  .modal-body { flex: 1; overflow-y: auto; }
+    .rc-row:last-child {
+      border-bottom: none;
+    }
 
-  .audit-header-row {
-    display: grid;
-    grid-template-columns: 150px 70px 100px 1fr;
-    gap: 10px;
-    padding: 8px 20px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    font-size: 10.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    color: var(--text-muted);
-  }
+    .rc-key {
+      font-size: 11px;
+      color: var(--text-muted);
+      width: 120px;
+      flex-shrink: 0;
+      text-transform: capitalize;
+    }
 
-  .audit-row {
-    display: grid;
-    grid-template-columns: 150px 70px 100px 1fr;
-    gap: 10px;
-    padding: 11px 20px;
-    border-bottom: 1px solid var(--border-light);
-    font-size: 12.5px;
-    align-items: center;
-  }
-  .audit-row:last-child { border-bottom: none; }
-  .audit-row .ts { color: var(--text-muted); font-size: 11px; font-family: var(--mono); }
-  .audit-row .change b { color: var(--success); }
+    .rc-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
 
-  .modal-empty {
-    padding: 40px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 13px;
-  }
-</style>
+    .rc-val.c-active {
+      color: var(--success);
+    }
+
+    .rc-val.c-frozen {
+      color: var(--warn);
+    }
+
+    .rc-val.c-closed {
+      color: var(--danger);
+    }
+
+    .rc-val.c-balance {
+      color: var(--brand);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Warning banner (already-frozen etc.) ───────────────────────────── */
+    .warn-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      color: #92400e;
+      line-height: 1.5;
+    }
+
+    .warn-banner .wi {
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    /* ── Typing indicator ───────────────────────────────────────────────── */
+    .typing {
+      display: flex;
+      gap: 4px;
+      padding: 4px 2px;
+      align-items: center;
+    }
+
+    .typing span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #bccde8;
+      animation: bounce .9s infinite;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: .30s;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      80%,
+      100% {
+        transform: translateY(0);
+        opacity: .4;
+      }
+
+      40% {
+        transform: translateY(-5px);
+        opacity: 1;
+      }
+    }
+
+    /* ── Suggestion chips ───────────────────────────────────────────────── */
+    .suggestions {
+      padding: 4px 20px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 5px;
+    }
+
+    .sug {
+      padding: 6px 13px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      line-height: 1.3;
+    }
+
+    .sug:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+      background: var(--brand-light);
+    }
+
+    /* ── Input bar ──────────────────────────────────────────────────────── */
+    .input-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      padding: 12px 20px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .input-wrap {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 9px 16px;
+      transition: border-color .15s;
+    }
+
+    .input-wrap:focus-within {
+      border-color: var(--brand);
+      background: transparent;
+    }
+
+    /* .input-wrap:focus-within textarea::placeholder {
+      color: black;
+    } */
+
+    /* ADD new rule */
+    .input-wrap textarea {
+      color: var(--text);
+    }
+
+    textarea {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13.5px;
+      font-family: var(--font);
+      color: var(--text);
+      resize: none;
+      max-height: 120px;
+      line-height: 1.5;
+    }
+
+    textarea::placeholder {
+      /* color: white; */
+      color: #9faec5;
+    }
+
+    textarea:focus::placeholder {
+      color: black;
+    }
+
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--brand);
+      border: none;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      flex-shrink: 0;
+      transition: background .15s, transform .1s, opacity .15s;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: var(--brand-btn);
+    }
+
+    .send-btn:active:not(:disabled) {
+      transform: scale(.92);
+    }
+
+    .send-btn:disabled {
+      opacity: .35;
+      cursor: default;
+    }
+
+    /* ── Audit modal ────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      width: min(580px, 94vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-head h2 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg);
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background .15s;
+    }
+
+    .modal-close:hover {
+      background: var(--border);
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .audit-header-row {
+      display: grid;
+      grid-template-columns: 150px 70px 100px 1fr;
+      gap: 10px;
+      padding: 8px 20px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+    }
+
+    .audit-row {
+      display: grid;
+      grid-template-columns: 150px 70px 100px 1fr;
+      gap: 10px;
+      padding: 11px 20px;
+      border-bottom: 1px solid var(--border-light);
+      font-size: 12.5px;
+      align-items: center;
+    }
+
+    .audit-row:last-child {
+      border-bottom: none;
+    }
+
+    .audit-row .ts {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+
+    .audit-row .change b {
+      color: var(--success);
+    }
+
+    .modal-empty {
+      padding: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ── Details button ─────────────────────────────────────────────────── */
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 4px;
+      margin-top: 2px;
+    }
+
+    .meta-row .meta-line {
+      padding: 0;
+      margin: 0;
+    }
+
+    .details-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--brand);
+      font-size: 10.5px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+
+    .details-btn:hover {
+      border-color: var(--brand);
+      background: var(--brand-light);
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Audit modal -->
-<div class="modal-overlay" id="audit-overlay" onclick="closeAuditOnBg(event)">
-  <div class="modal">
-    <div class="modal-head">
-      <h2>Audit Log</h2>
-      <button class="modal-close" onclick="closeAudit()">✕</button>
-    </div>
-    <div class="modal-body" id="audit-body">
-      <div class="modal-empty">Loading…</div>
-    </div>
-  </div>
-</div>
-
-<!-- App shell -->
-<div class="app">
-
-  <!-- Header -->
-  <header class="header">
-    <div class="header-logo">M</div>
-    <div class="header-copy">
-      <h1>MemberLink Assistant</h1>
-      <p>Automated banking back-office — type naturally, get answers instantly</p>
-    </div>
-    <div class="header-badge">
-      <div class="status-dot" id="status-dot"></div>
-      <span id="status-text">Connecting…</span>
-      <button class="audit-btn" onclick="openAudit()">Audit log</button>
-    </div>
-  </header>
-
-  <!-- Quick-action pills -->
-  <div class="pill-strip">
-    <span class="pill-label">Try:</span>
-    <span class="pill" onclick="fill(&quot;What is Alice's balance?&quot;)">Alice's balance</span>
-    <span class="pill" onclick="fill(&quot;Check member 100002&quot;)">Check member 100002</span>
-    <span class="pill" onclick="fill(&quot;Freeze Carol's account&quot;)">Freeze Carol</span>
-    <span class="pill" onclick="fill(&quot;Close Eva's account&quot;)">Close Eva's account</span>
-    <span class="pill" onclick="fill(&quot;Reactivate account 100003&quot;)">Reactivate 100003</span>
-  </div>
-
-  <!-- Messages -->
-  <div class="messages" id="messages">
-    <div class="msg-row bot">
-      <div class="avatar bot">M</div>
-      <div class="msg-body">
-        <div class="bubble">
-          👋 Hi! I'm the MemberLink Assistant. I can help you with:
-          <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
-            <div class="bullet-line">Look up a member's <strong>balance and account status</strong> — use their name or 6-digit ID</div>
-            <div class="bullet-line"><strong>Update account status</strong> — freeze, close, or reactivate an account</div>
-          </div>
-        </div>
+  <!-- Audit modal -->
+  <div class="modal-overlay" id="audit-overlay" onclick="closeAuditOnBg(event)">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Audit Log</h2>
+        <button class="modal-close" onclick="closeAudit()">✕</button>
+      </div>
+      <div class="modal-body" id="audit-body">
+        <div class="modal-empty">Loading…</div>
       </div>
     </div>
   </div>
 
-  <!-- Suggestion chips (disappear after first message) -->
-  <div class="suggestions" id="suggestions">
-    <span class="sug" onclick="fill(&quot;What is Bob's balance?&quot;)">What is Bob's balance?</span>
-    <span class="sug" onclick="fill(&quot;What is the status of Carol?&quot;)">Status of Carol?</span>
-    <span class="sug" onclick="fill(&quot;Freeze account 100001&quot;)">Freeze account 100001</span>
-    <span class="sug" onclick="fill(&quot;Check member 100004&quot;)">Check member 100004</span>
-  </div>
+  <!-- App shell -->
+  <div class="app">
 
-  <!-- Input bar -->
-  <div class="input-bar">
-    <div class="input-wrap">
-      <textarea id="inp" rows="1"
-        placeholder="Ask about a member… e.g. 'What is Alice's balance?' or 'Freeze Bob's account'"
-        onkeydown="onKey(event)"
-        oninput="grow(this)"></textarea>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-logo">M</div>
+      <div class="header-copy">
+        <h1>MemberLink Assistant</h1>
+        <p>Automated banking back-office — type naturally, get answers instantly</p>
+      </div>
+      <div class="header-badge">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Connecting…</span>
+              <button class="audit-btn" onclick="openAudit()">Audit log</button>
+      <button class="audit-btn" onclick="clearHistory();location.reload()" title="Clear chat history">Clear chat</button>
+      </div>
+    </header>
+
+    <!-- Quick-action pills -->
+    <div class="pill-strip">
+      <span class="pill-label">Try:</span>
+      <span class="pill" onclick="fill(&quot;What is Alice's balance?&quot;)">Alice's balance</span>
+      <span class="pill" onclick="fill(&quot;Check member 100002&quot;)">Check member 100002</span>
+      <span class="pill" onclick="fill(&quot;Freeze Carol's account&quot;)">Freeze Carol</span>
+      <span class="pill" onclick="fill(&quot;Close Eva's account&quot;)">Close Eva's account</span>
+      <span class="pill" onclick="fill(&quot;Reactivate account 100003&quot;)">Reactivate 100003</span>
     </div>
-    <button class="send-btn" id="send-btn" onclick="send()" title="Send">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/>
-      </svg>
-    </button>
-  </div>
 
-</div><!-- /app -->
+    <!-- Messages -->
+    <div class="messages" id="messages">
+      <div class="msg-row bot">
+        <div class="avatar bot">M</div>
+        <div class="msg-body">
+          <div class="bubble">
+            👋 Hi! I'm the MemberLink Assistant. I can help you with:
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+              <div class="bullet-line">Look up a member's <strong>balance and account status</strong> — use their name
+                or 6-digit ID</div>
+              <div class="bullet-line"><strong>Update account status</strong> — freeze, close, or reactivate an account
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<script>
-// ── Utilities ────────────────────────────────────────────────────────────
+    <!-- Suggestion chips (disappear after first message) -->
+    <div class="suggestions" id="suggestions">
+      <span class="sug" onclick="fill(&quot;What is Bob's balance?&quot;)">What is Bob's balance?</span>
+      <span class="sug" onclick="fill(&quot;What is the status of Carol?&quot;)">Status of Carol?</span>
+      <span class="sug" onclick="fill(&quot;Freeze account 100001&quot;)">Freeze account 100001</span>
+      <span class="sug" onclick="fill(&quot;Check member 100004&quot;)">Check member 100004</span>
 
-const $ = id => document.getElementById(id);
-const msgs = $('messages');
+    </div>
 
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+    <!-- Input bar -->
+    <div class="input-bar">
+      <div class="input-wrap">
+        <textarea id="inp" rows="1"
+          placeholder="Ask about a member… e.g. 'What is Alice's balance?' or 'Freeze Bob's account'"
+          onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+      </div>
+      <button class="send-btn" id="send-btn" onclick="send()" title="Send">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" />
+        </svg>
+      </button>
+    </div>
 
-function grow(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
+  </div><!-- /app -->
 
-function scroll() {
-  msgs.scrollTop = msgs.scrollHeight;
-}
+  <script>
+    // ── Utilities ────────────────────────────────────────────────────────────
 
-function ts() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
+    const $ = id => document.getElementById(id);
+    const msgs = $('messages');
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function esc(s) {
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
-// ── Input handling ────────────────────────────────────────────────────────
+    function grow(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
 
-function fill(text) {
-  $('inp').value = text;
-  $('inp').focus();
-  grow($('inp'));
-}
+    function scroll() {
+      msgs.scrollTop = msgs.scrollHeight;
+    }
 
-function onKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-}
+    function ts() {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
-// ── Message rendering ─────────────────────────────────────────────────────
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function addRow(role, html, metaText = '') {
-  const row = document.createElement('div');
-  row.className = `msg-row ${role}`;
-  const initial = role === 'bot' ? 'M' : 'U';
-  row.innerHTML = `
+    // ── History persistence ───────────────────────────────────────────────────
+
+    const HISTORY_KEY = 'memberlink_chat_history';
+    const MAX_HISTORY = 40; // max messages to persist
+
+    function saveHistory() {
+      try {
+        const rows = Array.from(msgs.querySelectorAll('.msg-row')).map(row => ({
+          role: row.classList.contains('user') ? 'user' : 'bot',
+          html: row.querySelector('.bubble').innerHTML,
+          meta: row.querySelector('.meta-row')?.innerHTML || row.querySelector('.meta-line')?.textContent || '',
+        }));
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(rows.slice(-MAX_HISTORY)));
+      } catch (e) { /* storage unavailable */ }
+    }
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        if (!raw) return;
+        const rows = JSON.parse(raw);
+        if (!rows.length) return;
+
+        // Remove the welcome message before restoring
+        const welcome = msgs.querySelector('.msg-row.bot');
+        if (welcome) welcome.remove();
+
+        rows.forEach(r => {
+          const row = document.createElement('div');
+          row.className = `msg-row ${r.role}`;
+          const initial = r.role === 'bot' ? 'M' : 'U';
+          const metaHtml = r.meta
+            ? (r.meta.includes('details-btn') || r.meta.includes('meta-line')
+              ? `<div class="meta-row">${r.meta}</div>`
+              : `<div class="meta-line">${r.meta}</div>`)
+            : '';
+          row.innerHTML = `
+        <div class="avatar ${r.role}">${initial}</div>
+        <div class="msg-body">
+          <div class="bubble">${r.html}</div>
+          ${metaHtml}
+        </div>`;
+          msgs.appendChild(row);
+        });
+        scroll();
+        $('suggestions').style.display = 'none';
+      } catch (e) { /* corrupt storage — ignore */ }
+    }
+
+    function clearHistory() {
+      try { localStorage.removeItem(HISTORY_KEY); } catch (e) { }
+    }
+
+    // ── Input handling ────────────────────────────────────────────────────────
+
+    function fill(text) {
+      const el = $('inp');
+      el.value = text;
+      el.dispatchEvent(new Event('input'));   /* ADD this line */
+      el.focus();
+      grow(el);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    }
+
+    // ── Message rendering ─────────────────────────────────────────────────────
+
+    function addRow(role, html, metaText = '') {
+      const row = document.createElement('div');
+      row.className = `msg-row ${role}`;
+      const initial = role === 'bot' ? 'M' : 'U';
+      row.innerHTML = `
     <div class="avatar ${role}">${initial}</div>
     <div class="msg-body">
       <div class="bubble">${html}</div>
       ${metaText ? `<div class="meta-line">${esc(metaText)}</div>` : ''}
     </div>`;
-  msgs.appendChild(row);
-  scroll();
-  return row;
-}
+      msgs.appendChild(row);
+      scroll();
+      saveHistory();
+      return row;
+    }
 
-function addTyping() {
-  const row = document.createElement('div');
-  row.className = 'msg-row bot';
-  row.id = 'typing-row';
-  row.innerHTML = `
+    function addTyping() {
+      const row = document.createElement('div');
+      row.className = 'msg-row bot';
+      row.id = 'typing-row';
+      row.innerHTML = `
     <div class="avatar bot">M</div>
     <div class="msg-body">
       <div class="bubble">
         <div class="typing"><span></span><span></span><span></span></div>
       </div>
     </div>`;
-  msgs.appendChild(row);
-  scroll();
-  return row;
-}
-
-function removeTyping() {
-  const el = $('typing-row');
-  if (el) el.remove();
-}
-
-// Render markdown-ish text: **bold**, `code`, bullet lines (• or -)
-function md(text) {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^[•\-]\s+(.+)$/gm, '<div class="bullet-line">$1</div>')
-    .replace(/\n/g, '<br>');
-}
-
-// Build the result data card
-function buildCard(outputs) {
-  if (!outputs || !Object.keys(outputs).length) return '';
-
-  const statusClass = v => {
-    const s = String(v ?? '').toLowerCase();
-    return s === 'active' ? 'c-active' : s === 'frozen' ? 'c-frozen' : s === 'closed' ? 'c-closed' : '';
-  };
-
-  const rows = Object.entries(outputs).map(([k, v]) => {
-    const label = k.replace(/_/g, ' ');
-    let cls = '';
-    let display = esc(String(v ?? '—'));
-
-    if (k === 'balance' || k === 'updated_balance') {
-      cls = 'c-balance';
-      if (typeof v === 'number') display = '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    } else if (k.includes('status')) {
-      cls = statusClass(v);
+      msgs.appendChild(row);
+      scroll();
+      return row;
     }
 
-    return `<div class="rc-row">
+    function removeTyping() {
+      const el = $('typing-row');
+      if (el) el.remove();
+    }
+
+    // Render markdown-ish text: **bold**, `code`, bullet lines (• or -)
+    function md(text) {
+      return text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/^[•\-]\s+(.+)$/gm, '<div class="bullet-line">$1</div>')
+        .replace(/\n/g, '<br>');
+    }
+
+    // Build the result data card
+    function buildCard(outputs) {
+      if (!outputs || !Object.keys(outputs).length) return '';
+
+      const statusClass = v => {
+        const s = String(v ?? '').toLowerCase();
+        return s === 'active' ? 'c-active' : s === 'frozen' ? 'c-frozen' : s === 'closed' ? 'c-closed' : '';
+      };
+
+      const rows = Object.entries(outputs).map(([k, v]) => {
+        const label = k.replace(/_/g, ' ');
+        let cls = '';
+        let display = esc(String(v ?? '—'));
+
+        if (k === 'balance' || k === 'updated_balance') {
+          cls = 'c-balance';
+          if (typeof v === 'number') display = '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } else if (k.includes('status')) {
+          cls = statusClass(v);
+        }
+
+        return `<div class="rc-row">
       <span class="rc-key">${esc(label)}</span>
       <span class="rc-val ${cls}">${display}</span>
     </div>`;
-  }).join('');
+      }).join('');
 
-  return `<div class="result-card">
+      return `<div class="result-card">
     <div class="rc-header">Extracted data</div>
     ${rows}
   </div>`;
-}
-
-// Build warning banner (e.g. "account already frozen")
-function buildWarn(text) {
-  return `<div class="warn-banner"><span class="wi">⚠️</span><span>${esc(text)}</span></div>`;
-}
-
-// ── Send & poll ───────────────────────────────────────────────────────────
-
-async function send() {
-  const inp  = $('inp');
-  const text = inp.value.trim();
-  if (!text) return;
-
-  $('suggestions').style.display = 'none';
-
-  addRow('user', esc(text), ts());
-  inp.value = '';
-  inp.style.height = 'auto';
-  $('send-btn').disabled = true;
-
-  const typingRow = addTyping();
-
-  try {
-    const res  = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text }),
-    });
-    const data = await res.json();
-    removeTyping();
-
-    if (data.type === 'accepted') {
-      // Show "running" bubble, then replace it with result
-      const runRow = addRow('bot',
-        `⏳ Running <strong>${humanCap(data.capability)}</strong> for <strong>${data.subject_label}</strong>…`
-      );
-      pollJob(data.job_id, runRow);
-    } else if (data.type === 'warning') {
-      // e.g. already-frozen
-      addRow('bot', md(data.reply) + buildWarn(data.warning));
-    } else {
-      addRow('bot', md(data.reply));
     }
-  } catch (e) {
-    removeTyping();
-    addRow('bot', '❌ Could not reach the server. Make sure it\'s running.');
-  }
 
-  $('send-btn').disabled = false;
-  inp.focus();
-}
-
-async function pollJob(jobId, runRow, attempt = 0) {
-  if (attempt > 90) {
-    runRow.querySelector('.bubble').innerHTML = '❌ Request timed out after 90 seconds.';
-    return;
-  }
-  await sleep(1500);
-  try {
-    const res = await fetch(`/api/job/${jobId}`);
-    const job = await res.json();
-    if (job.status !== 'done') { pollJob(jobId, runRow, attempt + 1); return; }
-
-    const meta = `${job.duration}s · ${job.steps} steps`;
-    const card = buildCard(job.outputs);
-    const warn = job.warning ? buildWarn(job.warning) : '';
-    runRow.querySelector('.bubble').innerHTML = md(job.reply) + card + warn;
-    // Update meta line
-    let metaEl = runRow.querySelector('.meta-line');
-    if (!metaEl) {
-      metaEl = document.createElement('div');
-      metaEl.className = 'meta-line';
-      runRow.querySelector('.msg-body').appendChild(metaEl);
+    // Build warning banner (e.g. "account already frozen")
+    function buildWarn(text) {
+      return `<div class="warn-banner"><span class="wi">⚠️</span><span>${esc(text)}</span></div>`;
     }
-    metaEl.textContent = meta;
-    scroll();
-  } catch {
-    runRow.querySelector('.bubble').innerHTML = '❌ Lost connection while waiting for result.';
-  }
-}
 
-function humanCap(cap) {
-  return { check_member_balance: 'Balance Lookup', update_account_status: 'Account Update' }[cap] || cap;
-}
+    // ── Send & poll ───────────────────────────────────────────────────────────
 
-// ── Health check ──────────────────────────────────────────────────────────
+    async function send() {
+      const inp = $('inp');
+      const text = inp.value.trim();
+      if (!text) return;
 
-async function checkHealth() {
-  try {
-    const res = await fetch('/api/health-proxy');
-    const ok  = res.ok;
-    $('status-dot').className  = 'status-dot' + (ok ? '' : ' offline');
-    $('status-text').textContent = ok ? 'Banking app online' : 'Banking app offline';
-  } catch {
-    $('status-dot').className  = 'status-dot offline';
-    $('status-text').textContent = 'Banking app offline';
-  }
-}
-checkHealth();
-setInterval(checkHealth, 12000);
+      $('suggestions').style.display = 'none';
 
-// ── Audit modal ───────────────────────────────────────────────────────────
+      addRow('user', esc(text), ts());
+      inp.value = '';
+      inp.style.height = 'auto';
+      $('send-btn').disabled = true;
 
-async function openAudit() {
-  $('audit-overlay').classList.add('open');
-  $('audit-body').innerHTML = '<div class="modal-empty">Loading…</div>';
-  try {
-    const res = await fetch('/api/audit-log');
-    const log = await res.json();
-    if (!log.length) {
-      $('audit-body').innerHTML = '<div class="modal-empty">No account updates recorded yet in this session.</div>';
-      return;
+      const typingRow = addTyping();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        });
+        const data = await res.json();
+        removeTyping();
+
+        if (data.type === 'accepted') {
+          // Show "running" bubble, then replace it with result
+          const runRow = addRow('bot',
+            `⏳ Running <strong>${humanCap(data.capability)}</strong> for <strong>${data.subject_label}</strong>…`
+          );
+          pollJob(data.job_id, runRow);
+        } else if (data.type === 'warning') {
+          // e.g. already-frozen
+          addRow('bot', md(data.reply) + buildWarn(data.warning));
+        } else {
+          addRow('bot', md(data.reply));
+        }
+      } catch (e) {
+        removeTyping();
+        addRow('bot', '❌ Could not reach the server. Make sure it\'s running.');
+      }
+
+      $('send-btn').disabled = false;
+      inp.focus();
     }
-    $('audit-body').innerHTML =
-      `<div class="audit-header-row"><span>Time</span><span>Member</span><span>Field</span><span>Change</span></div>` +
-      log.map(e => `<div class="audit-row">
-        <span class="ts">${esc(e.ts.slice(0,19).replace('T',' '))}</span>
+
+    async function pollJob(jobId, runRow, attempt = 0) {
+      if (attempt > 90) {
+        runRow.querySelector('.bubble').innerHTML = '❌ Request timed out after 90 seconds.';
+        return;
+      }
+      await sleep(1500);
+      try {
+        const res = await fetch(`/api/job/${jobId}`);
+        const job = await res.json();
+        if (job.status !== 'done') { pollJob(jobId, runRow, attempt + 1); return; }
+
+        const card = buildCard(job.outputs);
+        const warn = job.warning ? buildWarn(job.warning) : '';
+        runRow.querySelector('.bubble').innerHTML = md(job.reply) + card + warn;
+
+        // Meta row: duration + steps + Details button
+        const msgBody = runRow.querySelector('.msg-body');
+        let metaRow = runRow.querySelector('.meta-row');
+        if (!metaRow) {
+          metaRow = document.createElement('div');
+          metaRow.className = 'meta-row';
+          msgBody.appendChild(metaRow);
+        }
+        metaRow.innerHTML =
+          `<span class="meta-line">${job.duration}s · ${job.steps} steps</span>` +
+          `<a class="details-btn" href="/dashboard?job=${jobId}" target="_blank">` +
+          `🔍 View run details</a>`;
+        scroll();
+        saveHistory();
+      } catch {
+        runRow.querySelector('.bubble').innerHTML = '❌ Lost connection while waiting for result.';
+      }
+    }
+
+    function humanCap(cap) {
+      return { check_member_balance: 'Balance Lookup', update_account_status: 'Account Update' }[cap] || cap;
+    }
+
+    // ── Health check ──────────────────────────────────────────────────────────
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health-proxy');
+        const ok = res.ok;
+        $('status-dot').className = 'status-dot' + (ok ? '' : ' offline');
+        $('status-text').textContent = ok ? 'Banking app online' : 'Banking app offline';
+      } catch {
+        $('status-dot').className = 'status-dot offline';
+        $('status-text').textContent = 'Banking app offline';
+      }
+    }
+    // Restore previous session messages
+    loadHistory();
+    checkHealth();
+    setInterval(checkHealth, 12000);
+
+    // ── Audit modal ───────────────────────────────────────────────────────────
+
+    async function openAudit() {
+      $('audit-overlay').classList.add('open');
+      $('audit-body').innerHTML = '<div class="modal-empty">Loading…</div>';
+      try {
+        const res = await fetch('/api/audit-log');
+        const log = await res.json();
+        if (!log.length) {
+          $('audit-body').innerHTML = '<div class="modal-empty">No account updates recorded yet in this session.</div>';
+          return;
+        }
+        $('audit-body').innerHTML =
+          `<div class="audit-header-row"><span>Time</span><span>Member</span><span>Field</span><span>Change</span></div>` +
+          log.map(e => `<div class="audit-row">
+        <span class="ts">${esc(e.ts.slice(0, 19).replace('T', ' '))}</span>
         <span>${esc(e.member_id)} — ${esc(e.member_name)}</span>
         <span>${esc(e.field)}</span>
         <span class="change">${esc(e.old_value)} → <b>${esc(e.new_value)}</b></span>
       </div>`).join('');
-  } catch {
-    $('audit-body').innerHTML = '<div class="modal-empty">Could not load audit log.</div>';
-  }
-}
+      } catch {
+        $('audit-body').innerHTML = '<div class="modal-empty">Could not load audit log.</div>';
+      }
+    }
 
-function closeAudit() { $('audit-overlay').classList.remove('open'); }
-function closeAuditOnBg(e) { if (e.target === $('audit-overlay')) closeAudit(); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAudit(); });
-</script>
+    function closeAudit() { $('audit-overlay').classList.remove('open'); }
+    function closeAuditOnBg(e) { if (e.target === $('audit-overlay')) closeAudit(); }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAudit(); });
+  </script>
 </body>
+
 </html>

@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Dashboard — MemberLink</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface2: #1c2128;
+            --surface3: #21262d;
+            --border: rgba(255, 255, 255, .08);
+            --border2: rgba(255, 255, 255, .15);
+            --text: #e6edf3;
+            --muted: #7d8590;
+            --accent: #6366f1;
+            --accent2: #818cf8;
+            --success: #3fb950;
+            --warn: #d29922;
+            --danger: #f85149;
+            --info: #58a6ff;
+            --hitl: #bc8cff;
+            --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            --sans: 'Inter', system-ui, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 13px;
+            line-height: 1.6;
+            min-height: 100vh
+        }
+
+        /* HEADER */
+        .hdr {
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 100;
+            gap: 12px
+        }
+
+        .hdr-left {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0
+        }
+
+        .hdr h1 {
+            font-size: 13px;
+            font-weight: 600
+        }
+
+        .hdr-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 1px
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--text);
+            padding: 5px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: var(--sans);
+            transition: all .15s;
+            text-decoration: none
+        }
+
+        .back-btn:hover {
+            border-color: var(--accent)
+        }
+
+        /* LAYOUT */
+        .main {
+            padding: 20px 24px;
+            max-width: 1400px;
+            margin: 0 auto
+        }
+
+        /* MODE TABS (auto vs manual) */
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px
+        }
+
+        .mode-tab {
+            padding: 6px 16px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-family: var(--sans);
+            transition: all .15s
+        }
+
+        .mode-tab.active {
+            border-color: var(--accent);
+            color: var(--accent2);
+            background: rgba(99, 102, 241, .1)
+        }
+
+        /* LOADING */
+        #loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--muted)
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+            margin: 0 auto 12px
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* JOB HEADER (auto mode) */
+        /* .job-header{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap} */
+        /* .job-header{background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    flex-wrap: wrap;
+    text-align: center;
+width: 100%;} */
+
+        .job-header {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .job-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            height: fit-content;
+            width: fit-content;
+        }
+
+        .job-badge.success {
+            background: rgba(63, 185, 80, .15);
+            color: var(--success)
+        }
+
+        .job-badge.business_outcome {
+            background: rgba(210, 153, 34, .15);
+            color: var(--warn)
+        }
+
+        .job-badge.hard_failure {
+            background: rgba(248, 81, 73, .15);
+            color: var(--danger)
+        }
+
+        .job-meta {
+            font-size: 11px;
+            color: var(--muted);
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap
+        }
+
+        .job-meta span b {
+            color: var(--text)
+        }
+
+        .job-reply {
+            flex: 1;
+            font-size: 12px;
+            color: var(--text);
+            min-width: 200px
+        }
+
+        /* SECTION HEADERS */
+        .sec {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .sec:first-child {
+            margin-top: 0
+        }
+
+        .sec-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border)
+        }
+
+        /* TABS (within a section) */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-bottom: 14px
+        }
+
+        .tab {
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 11px;
+            font-family: var(--sans);
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            gap: 5px
+        }
+
+        .tab:hover {
+            border-color: var(--border2);
+            color: var(--text)
+        }
+
+        .tab.active {
+            border-color: var(--accent);
+            color: var(--accent2);
+            background: rgba(99, 102, 241, .1)
+        }
+
+        .badge-count {
+            background: var(--surface3);
+            color: var(--muted);
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 10px
+        }
+
+        /* OUTPUTS */
+        .outputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 8px;
+            margin-bottom: 16px
+        }
+
+        .out-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 9px 12px
+        }
+
+        .out-key {
+            font-size: 9px;
+            color: var(--muted);
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: .04em
+        }
+
+        .out-val {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--success);
+            font-weight: 700
+        }
+
+        /* TIMELINE */
+        .timeline {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            overflow: hidden;
+            margin-bottom: 12px
+        }
+
+        .tl-hdr {
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 120px 80px 1fr 65px 55px 180px;
+            gap: 10px;
+            font-size: 10px;
+            color: var(--muted);
+            font-weight: 500;
+            letter-spacing: .04em
+        }
+
+        .tl-row {
+            display: grid;
+            grid-template-columns: 120px 80px 1fr 65px 55px 180px;
+            align-items: center;
+            padding: 7px 14px;
+            border-bottom: 1px solid var(--border);
+            gap: 10px;
+            transition: background .1s
+        }
+
+        .tl-row:last-child {
+            border-bottom: none
+        }
+
+        .tl-row:hover {
+            background: var(--surface2)
+        }
+
+        .tl-step {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .tl-bar-wrap {
+            height: 5px;
+            background: rgba(255, 255, 255, .04);
+            border-radius: 3px
+        }
+
+        .tl-bar {
+            height: 100%;
+            border-radius: 3px;
+            min-width: 3px
+        }
+
+        .tl-dur {
+            font-size: 10px;
+            color: var(--muted);
+            text-align: right;
+            font-variant-numeric: tabular-nums
+        }
+
+        .tl-desc {
+            font-size: 10px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 500;
+            white-space: nowrap
+        }
+
+        .tag.s {
+            background: rgba(63, 185, 80, .12);
+            color: var(--success)
+        }
+
+        .tag.d {
+            background: rgba(248, 81, 73, .12);
+            color: var(--danger)
+        }
+
+        .tag.w {
+            background: rgba(210, 153, 34, .12);
+            color: var(--warn)
+        }
+
+        .tag.i {
+            background: rgba(88, 166, 255, .12);
+            color: var(--info)
+        }
+
+        .tag.h {
+            background: rgba(188, 140, 255, .12);
+            color: var(--hitl)
+        }
+
+        .ab {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-family: var(--mono)
+        }
+
+        .ab-navigate {
+            background: rgba(99, 102, 241, .15);
+            color: #818cf8
+        }
+
+        .ab-type {
+            background: rgba(88, 166, 255, .15);
+            color: #58a6ff
+        }
+
+        .ab-click {
+            background: rgba(63, 185, 80, .15);
+            color: #3fb950
+        }
+
+        .ab-extract {
+            background: rgba(210, 153, 34, .15);
+            color: #d29922
+        }
+
+        .ab-assert {
+            background: rgba(188, 140, 255, .15);
+            color: #bc8cff
+        }
+
+        .ab-other {
+            background: rgba(255, 255, 255, .06);
+            color: var(--muted)
+        }
+
+        /* GALLERY */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px
+        }
+
+        .gallery-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            overflow: hidden
+        }
+
+        .gallery-item.failure-img {
+            border-color: rgba(248, 81, 73, .3)
+        }
+
+        .gallery-item.hitl-img {
+            border-color: rgba(188, 140, 255, .3)
+        }
+
+        .img-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .img-name {
+            font-size: 11px;
+            font-weight: 500;
+            font-family: var(--mono);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .img-meta {
+            font-size: 10px;
+            color: var(--muted)
+        }
+
+        .img-wrap {
+            cursor: pointer;
+            position: relative
+        }
+
+        .img-wrap img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            object-position: top;
+            display: block
+        }
+
+        .img-expand-hint {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0, 0, 0, .65);
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 3px;
+            pointer-events: none
+        }
+
+        /* EVENT LOG */
+        .log-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            overflow: hidden
+        }
+
+        .log-toolbar {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .log-label {
+            font-size: 10px;
+            color: var(--muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-right: 3px
+        }
+
+        .filt {
+            padding: 2px 9px;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            font-size: 10px;
+            cursor: pointer;
+            font-family: var(--sans);
+            transition: all .12s
+        }
+
+        .filt.on {
+            border-color: var(--accent);
+            color: var(--accent2);
+            background: rgba(99, 102, 241, .1)
+        }
+
+        .log-scroll {
+            max-height: 480px;
+            overflow-y: auto
+        }
+
+        .log-row {
+            display: grid;
+            grid-template-columns: 88px 185px 1fr;
+            align-items: start;
+            gap: 8px;
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 11px;
+            transition: background .1s;
+            cursor: pointer
+        }
+
+        .log-row:last-child {
+            border-bottom: none
+        }
+
+        .log-row:hover {
+            background: var(--surface2)
+        }
+
+        .log-ts {
+            color: var(--muted)
+        }
+
+        .log-event {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .log-row.ev-error .log-event {
+            color: var(--danger)
+        }
+
+        .log-row.ev-warn .log-event {
+            color: var(--warn)
+        }
+
+        .log-row.ev-hitl .log-event {
+            color: var(--hitl)
+        }
+
+        .log-row.ev-done .log-event {
+            color: var(--success)
+        }
+
+        .log-row.ev-default .log-event {
+            color: var(--accent2)
+        }
+
+        .log-data {
+            color: var(--text);
+            opacity: .6;
+            word-break: break-all;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .log-row.expanded .log-data {
+            white-space: pre-wrap;
+            overflow: visible;
+            opacity: .85
+        }
+
+        /* HITL CARDS */
+        .hitl-card {
+            background: rgba(188, 140, 255, .05);
+            border: 1px solid rgba(188, 140, 255, .2);
+            border-radius: 7px;
+            padding: 14px 16px;
+            margin-bottom: 8px
+        }
+
+        .hitl-hdr {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap
+        }
+
+        .hitl-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(188, 140, 255, .12);
+            color: var(--hitl);
+            padding: 2px 9px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500
+        }
+
+        .hitl-grid {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 5px 14px;
+            font-size: 11px
+        }
+
+        .hk {
+            color: var(--muted)
+        }
+
+        .hv {
+            font-family: var(--mono);
+            font-size: 10px;
+            word-break: break-all
+        }
+
+        .hitl-reason {
+            grid-column: 1/-1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 7px 10px;
+            font-family: var(--mono);
+            font-size: 10px;
+            white-space: pre-wrap;
+            color: var(--warn);
+            margin-top: 3px
+        }
+
+        /* MANUAL UPLOAD (3-tab) */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px
+        }
+
+        @media(max-width:700px) {
+            .upload-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .upload-box {
+            border: 1.5px dashed var(--border2);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s
+        }
+
+        .upload-box:hover,
+        .upload-box.drag-over {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, .04)
+        }
+
+        .upload-icon {
+            font-size: 22px;
+            margin-bottom: 6px;
+            opacity: .4
+        }
+
+        .upload-title {
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 4px
+        }
+
+        .upload-sub {
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.8
+        }
+
+        .chip {
+            display: inline-block;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1px 7px;
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--muted);
+            margin: 2px
+        }
+
+        /* EMPTY */
+        .empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            gap: 7px;
+            text-align: center
+        }
+
+        .empty-icon {
+            font-size: 22px;
+            opacity: .2
+        }
+
+        .empty-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--muted)
+        }
+
+        .empty-sub {
+            font-size: 11px;
+            color: var(--muted);
+            opacity: .7;
+            max-width: 300px;
+            line-height: 1.6
+        }
+
+        /* LIGHTBOX */
+        #lb {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .88);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px
+        }
+
+        #lb.open {
+            display: flex
+        }
+
+        #lb img {
+            max-width: 90vw;
+            max-height: 82vh;
+            object-fit: contain;
+            border-radius: 4px
+        }
+
+        #lb-cap {
+            color: rgba(255, 255, 255, .7);
+            font-size: 12px;
+            font-family: var(--mono)
+        }
+
+        #lb-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            color: rgba(255, 255, 255, .5);
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none
+        }
+
+        #lb-close:hover {
+            color: #fff
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 3px
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LIGHTBOX -->
+    <div id="lb" onclick="closeLB()">
+        <button id="lb-close" onclick="closeLB()">✕</button>
+        <img id="lb-img" src="" alt="">
+        <div id="lb-cap"></div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="hdr">
+        <div class="hdr-left">
+            <div class="logo">A</div>
+            <div>
+                <div style="font-size:13px;font-weight:600" id="hdr-title">Automation Run Dashboard</div>
+                <div class="hdr-sub" id="hdr-sub">Loading…</div>
+            </div>
+        </div>
+        <a href="/" class="back-btn">← Back to Chat</a>
+    </header>
+
+    <main class="main" id="main">
+        <div id="loading">
+            <div class="spinner"></div>
+            <div>Loading run details…</div>
+        </div>
+    </main>
+
+    <script>
+        /* ═══════════════ ROUTING ════════════════════════════════════════════════ */
+        const params = new URLSearchParams(location.search);
+        const JOB_ID = params.get('job');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (JOB_ID) {
+                loadJobMode(JOB_ID);
+            } else {
+                loadManualMode();
+            }
+        });
+
+        /* ═══════════════ AUTO MODE (job= param) ═════════════════════════════════ */
+
+        async function loadJobMode(jobId) {
+            document.getElementById('hdr-sub').textContent = `Job ${jobId.slice(0, 8)}…`;
+            try {
+                const res = await fetch(`/api/job/${jobId}/details`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                renderJobDashboard(data);
+            } catch (e) {
+                document.getElementById('main').innerHTML =
+                    `<div class="empty"><div class="empty-icon">⚠</div>
+       <div class="empty-title">Could not load job</div>
+       <div class="empty-sub">${h(e.message)}</div></div>`;
+            }
+        }
+
+        function renderJobDashboard(d) {
+            document.getElementById('hdr-title').textContent = `Run: ${humanCap(d.capability)}`;
+            document.getElementById('hdr-sub').textContent =
+                `${d.duration}s · ${d.steps} steps · ${d.outcome}`;
+
+            const outcomeClass = d.outcome || 'unknown';
+            const main = document.getElementById('main');
+            main.innerHTML = '';
+
+            // ── Job header card ────────────────────────────────────────────────────
+            const hdr = el('div', 'job-header');
+            hdr.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%">
+      <span class="job-badge ${outcomeClass}">${outcomeLabel(d.outcome)}</span>
+      <span style="font-size:11px;color:var(--muted)"><b style="color:var(--text)">Capability:</b> ${h(humanCap(d.capability))}</span>
+      <span style="font-size:11px;color:var(--muted)"><b style="color:var(--text)">Duration:</b> ${d.duration}s</span>
+      <span style="font-size:11px;color:var(--muted)"><b style="color:var(--text)">Steps:</b> ${d.steps}</span>
+    </div>
+    <div style="margin-top:10px;font-size:13px;border-left:3px solid var(--accent);padding-left:10px">${md(d.reply || '')}</div>`;
+            main.appendChild(hdr);
+
+            // ── Outputs ────────────────────────────────────────────────────────────
+            if (d.outputs && Object.keys(d.outputs).length) {
+                main.appendChild(sectionHeader('Extracted Outputs'));
+                const grid = el('div', 'outputs-grid');
+                for (const [k, v] of Object.entries(d.outputs)) {
+                    const item = el('div', 'out-item');
+                    item.innerHTML = `<div class="out-key">${h(k.replace(/_/g, ' '))}</div>
+        <div class="out-val">${h(String(v ?? '—'))}</div>`;
+                    grid.appendChild(item);
+                }
+                main.appendChild(grid);
+            }
+
+            // ── Step timeline ──────────────────────────────────────────────────────
+            main.appendChild(sectionHeader('Step Timeline'));
+            main.appendChild(renderTimeline(d.log_entries || []));
+
+            // ── Screenshots ────────────────────────────────────────────────────────
+            if (d.screenshots && d.screenshots.length) {
+                main.appendChild(sectionHeader(`Screenshots (${d.screenshots.length})`));
+                main.appendChild(renderGallery(d.screenshots));
+            }
+
+            // ── Interventions ──────────────────────────────────────────────────────
+            if (d.interventions && d.interventions.length) {
+                main.appendChild(sectionHeader(`HITL Interventions (${d.interventions.length})`));
+                d.interventions.forEach(iv => main.appendChild(renderIntervention(iv)));
+            }
+
+            // ── Event log ──────────────────────────────────────────────────────────
+            main.appendChild(sectionHeader('Full Event Log'));
+            main.appendChild(renderEventLog(d.log_entries || []));
+        }
+
+        /* ═══════════════ MANUAL MODE (no job= param) ════════════════════════════ */
+
+        // State buckets for manual upload
+        const M = { logs: [], screenshots: [], interventions: [] };
+
+        function loadManualMode() {
+            document.getElementById('hdr-sub').textContent = 'Manual file upload';
+            document.getElementById('loading').remove();
+
+            const main = document.getElementById('main');
+
+            // How-to note
+            const note = el('div');
+            note.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:18px;font-size:12px;color:var(--muted);line-height:1.7';
+            note.innerHTML = `<b style="color:var(--text)">Manual mode</b> — drop files into each bucket below, then click Render.<br>
+    <b>Tip:</b> from <code style="font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:3px">evidence/jobs/{job_id}/</code> drop each subfolder into the matching bucket.`;
+            main.appendChild(note);
+
+            // Three drop zones
+            const grid = el('div', 'upload-grid');
+
+            const zones = [
+                { key: 'logs', icon: '📋', title: 'Log files', sub: 'replay.log, any .log or .json with log_entries', accept: '.log,.json' },
+                { key: 'screenshots', icon: '🖼', title: 'Screenshots', sub: '*.png or *.jpg from the screenshots/ folder', accept: '.png,.jpg,.jpeg' },
+                { key: 'interventions', icon: '🛑', title: 'Interventions', sub: 'intervention_*.json from interventions/ folder', accept: '.json' },
+            ];
+
+            zones.forEach(z => {
+                const box = el('div', 'upload-box');
+                box.id = `zone-${z.key}`;
+                box.innerHTML = `<div class="upload-icon">${z.icon}</div>
+      <div class="upload-title">${z.title}</div>
+      <div class="upload-sub">${z.sub}<br>
+        <span id="count-${z.key}" style="color:var(--accent2)">0 files loaded</span>
+      </div>`;
+
+                box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('drag-over'); });
+                box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
+                box.addEventListener('drop', e => {
+                    e.preventDefault(); box.classList.remove('drag-over');
+                    handleFiles(e.dataTransfer.files, z.key);
+                });
+                box.addEventListener('click', () => {
+                    const inp = document.createElement('input');
+                    inp.type = 'file'; inp.multiple = true; inp.accept = z.accept;
+                    inp.onchange = () => handleFiles(inp.files, z.key);
+                    inp.click();
+                });
+                grid.appendChild(box);
+            });
+            main.appendChild(grid);
+
+            // Render button
+            const btn = el('button');
+            btn.textContent = 'Render Dashboard';
+            btn.style.cssText = 'background:var(--accent);color:#fff;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-size:13px;margin-bottom:20px';
+            btn.onclick = renderManual;
+            main.appendChild(btn);
+
+            // Results area
+            const results = el('div');
+            results.id = 'manual-results';
+            main.appendChild(results);
+        }
+
+        function handleFiles(files, bucket) {
+            Array.from(files).forEach(f => {
+                const name = f.name.toLowerCase();
+                const r = new FileReader();
+
+                if (bucket === 'screenshots') {
+                    r.onload = e => {
+                        M.screenshots.push({ name: f.name, data: e.target.result, size: f.size });
+                        document.getElementById(`count-screenshots`).textContent =
+                            `${M.screenshots.length} files loaded`;
+                    };
+                    r.readAsDataURL(f);
+                    return;
+                }
+
+                r.onload = e => {
+                    const text = e.target.result;
+                    if (bucket === 'logs') {
+                        // Accept .log (ndjson) or .json with log_entries array
+                        if (name.endsWith('.json')) {
+                            try {
+                                const obj = JSON.parse(text);
+                                const entries = obj.log_entries || (Array.isArray(obj) ? obj : [obj]);
+                                M.logs.push(...entries);
+                            } catch (_) { }
+                        } else {
+                            text.trim().split('\n').forEach(line => {
+                                try { M.logs.push(JSON.parse(line)); } catch (_) { }
+                            });
+                        }
+                    } else if (bucket === 'interventions') {
+                        try {
+                            const obj = JSON.parse(text);
+                            if (obj.request_id) M.interventions.push(obj);
+                        } catch (_) { }
+                    }
+                    document.getElementById(`count-${bucket}`).textContent =
+                        `${bucket === 'logs' ? M.logs.length + ' events' : (bucket === 'interventions' ? M.interventions.length : 0) + ' files'} loaded`;
+                };
+                r.readAsText(f);
+            });
+        }
+
+        function renderManual() {
+            const area = document.getElementById('manual-results');
+            area.innerHTML = '';
+
+            // Guard: limit large logs
+            let logs = M.logs;
+            let logNote = '';
+            if (logs.length > 500) {
+                logNote = `Showing last 500 of ${logs.length} events`;
+                logs = logs.slice(-500);
+            }
+
+            if (!logs.length && !M.screenshots.length && !M.interventions.length) {
+                area.innerHTML = `<div class="empty"><div class="empty-icon">∅</div>
+      <div class="empty-title">Nothing loaded yet</div>
+      <div class="empty-sub">Drop files into the buckets above, then click Render.</div></div>`;
+                return;
+            }
+
+            if (logs.length) {
+                area.appendChild(sectionHeader(`Step Timeline${logNote ? ' — ' + logNote : ''}`));
+                area.appendChild(renderTimeline(logs));
+                area.appendChild(sectionHeader('Full Event Log' + (logNote ? ` (${logNote})` : '')));
+                area.appendChild(renderEventLog(logs));
+            }
+
+            if (M.screenshots.length) {
+                area.appendChild(sectionHeader(`Screenshots (${M.screenshots.length})`));
+                area.appendChild(renderGallery(M.screenshots));
+            }
+
+            if (M.interventions.length) {
+                area.appendChild(sectionHeader(`HITL Interventions (${M.interventions.length})`));
+                M.interventions.forEach(iv => area.appendChild(renderIntervention(iv)));
+            }
+        }
+
+        /* ═══════════════ SHARED RENDERERS ══════════════════════════════════════ */
+
+        function renderTimeline(events) {
+            const steps = getSteps(events);
+            if (!steps.length) {
+                return emptyCard('No steps found', 'Load a replay .log file to see the step timeline.');
+            }
+            const maxD = Math.max(...steps.map(s => s.dur), 1);
+            const barColor = s => {
+                if (!s.success) return '#f85149';
+                return {
+                    navigate: '#818cf8', type: '#58a6ff', click: '#3fb950',
+                    extract: '#d29922', assert: '#bc8cff'
+                }[s.action] || '#7d8590';
+            };
+
+            const tl = el('div', 'timeline');
+            tl.innerHTML = `<div class="tl-hdr"><span>STEP ID</span><span>ACTION</span><span>BAR</span><span>DURATION</span><span>STATUS</span><span>${steps.length} steps</span></div>`;
+
+            steps.forEach(s => {
+                const row = el('div', 'tl-row');
+                row.innerHTML = `
+      <span class="tl-step">${h(s.id)}</span>
+      <span><span class="ab ab-${s.action}">${h(s.action)}</span></span>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:${Math.max(1, s.dur / maxD * 100)}%;background:${barColor(s)};opacity:.8"></div></div>
+      <span class="tl-dur">${s.dur > 0 ? s.dur + 'ms' : '—'}</span>
+      <span><span class="tag ${s.success ? 's' : 'd'}">${s.success ? 'ok' : 'failed'}</span></span>
+      <span class="tl-desc" title="${h(s.desc)}">${h(s.desc)}</span>`;
+                tl.appendChild(row);
+            });
+
+            // Business outcome / complete rows
+            const bo = events.find(e => e.event === 'business_outcome_detected');
+            if (bo) {
+                const row = el('div', 'tl-row');
+                row.style.background = 'rgba(210,153,34,.04)';
+                row.innerHTML = `<span class="tl-step">BO</span><span><span class="tag w">business</span></span>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#d29922;opacity:.2"></div></div>
+      <span class="tl-dur">—</span><span></span>
+      <span class="tl-desc">${h((bo.outcome || '').split('\n')[0])}</span>`;
+                tl.appendChild(row);
+            }
+
+            const done = events.find(e => e.event === 'replay_complete');
+            if (done) {
+                const row = el('div', 'tl-row');
+                row.style.background = 'rgba(63,185,80,.04)';
+                row.innerHTML = `<span class="tl-step">✓</span><span><span class="tag s">done</span></span>
+      <div class="tl-bar-wrap"><div class="tl-bar" style="width:100%;background:#3fb950;opacity:.3"></div></div>
+      <span class="tl-dur">—</span><span></span>
+      <span class="tl-desc">${h(JSON.stringify(done.outputs || {}).slice(0, 100))}</span>`;
+                tl.appendChild(row);
+            }
+
+            return tl;
+        }
+
+        function renderGallery(screenshots) {
+            const gallery = el('div', 'gallery');
+            screenshots.forEach(img => {
+                const fn = img.name.toLowerCase();
+                const isF = fn.includes('failure') || fn.includes('fail');
+                const isH = fn.includes('hitl') || fn.includes('annotated');
+                const cls = isH ? 'hitl-img' : isF ? 'failure-img' : '';
+                const tag = isH ? '<span class="tag h">HITL</span>' : isF ? '<span class="tag d">failure</span>' : '<span class="tag s">success</span>';
+                const kb = ((img.size || 0) / 1024).toFixed(1);
+
+                const item = el('div', `gallery-item ${cls}`);
+                item.innerHTML = `
+      <div class="img-header">
+        <span class="img-name">${h(img.name)}</span>
+        <span class="img-meta">${kb} KB</span>
+        ${tag}
+      </div>
+      <div class="img-wrap" onclick="openLB('${img.data.replace(/'/g, "\\'")}','${h(img.name)}')">
+        <img src="${img.data}" alt="${h(img.name)}" loading="lazy">
+        <div class="img-expand-hint">click to enlarge</div>
+      </div>`;
+                gallery.appendChild(item);
+            });
+            return gallery;
+        }
+
+        function renderIntervention(req) {
+            const card = el('div', 'hitl-card');
+            card.innerHTML = `
+    <div class="hitl-hdr">
+      <span class="hitl-badge">🛑 HITL Intervention</span>
+      <span class="tag ${req.status === 'resolved' ? 's' : 'w'}">${req.status}</span>
+      <span class="tag i">${(req.severity || 'medium').toUpperCase()}</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--muted)">${(req.created_at || '').slice(0, 19).replace('T', ' ')} UTC</span>
+    </div>
+    <div class="hitl-grid">
+      <span class="hk">Request ID</span><span class="hv">${h(req.request_id || '—')}</span>
+      <span class="hk">Capability</span><span class="hv">${h(req.capability_name || '—')}</span>
+      <span class="hk">Stuck at step</span><span class="hv">${h(req.current_step_id || '—')}</span>
+      <span class="hk">URL when stuck</span><span class="hv">${h(req.current_url || '—')}</span>
+      <span class="hk">Human notes</span><span class="hv">${h(req.human_notes || '(none)')}</span>
+      <span class="hk" style="grid-column:1/-1;margin-top:4px">Error reason</span>
+      <div class="hitl-reason">${h(req.reason || '—')}</div>
+    </div>`;
+            return card;
+        }
+
+        function renderEventLog(events) {
+            if (!events.length) return emptyCard('No events', 'No log entries found.');
+
+            const card = el('div', 'log-card');
+            const cats = ['all', 'step', 'output', 'error', 'hitl'];
+            const catOf = ev => {
+                const e = ev.event || '';
+                if (e.includes('step')) return 'step';
+                if (e.includes('output') || e.includes('extract') || e.includes('complete')) return 'output';
+                if (e.includes('error') || e.includes('fail')) return 'error';
+                if (e.includes('hitl') || e.includes('intervention')) return 'hitl';
+                return 'other';
+            };
+            const clsOf = ev => {
+                const e = ev.event || '';
+                if (e.includes('error') || e.includes('fail')) return 'ev-error';
+                if (e.includes('retry') || e.includes('recover')) return 'ev-warn';
+                if (e.includes('hitl')) return 'ev-hitl';
+                if (e.includes('complete') || e.includes('extracted')) return 'ev-done';
+                return 'ev-default';
+            };
+            const tsOf = ev => {
+                const t = ev.ts || ev.timestamp || '';
+                if (!t) return '—';
+                try { return new Date(t).toISOString().slice(11, 23); } catch (_) { return t.slice(0, 12); }
+            };
+            const dataOf = ev => {
+                const skip = new Set(['event', 'ts', 'timestamp']);
+                return Object.entries(ev).filter(([k]) => !skip.has(k))
+                    .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`).join('\n');
+            };
+
+            // Toolbar
+            const toolbar = el('div', 'log-toolbar');
+            toolbar.innerHTML = `<span class="log-label">Filter</span>` +
+                cats.map(c => `<button class="filt ${c === 'all' ? 'on' : ''}" data-f="${c}" onclick="applyF(this)">${c}</button>`).join('') +
+                `<span style="margin-left:auto;font-size:10px;color:var(--muted)">${events.length} events</span>`;
+            card.appendChild(toolbar);
+
+            const scroll = el('div', 'log-scroll');
+            scroll.id = 'log-scroll-' + Math.random().toString(36).slice(2);
+
+            events.forEach((ev, i) => {
+                const full = dataOf(ev);
+                const row = el('div', `log-row ${clsOf(ev)}`);
+                row.dataset.cat = catOf(ev);
+                row.id = `lr${i}`;
+                row.onclick = () => togRow(i);
+                row.innerHTML = `
+      <span class="log-ts">${tsOf(ev)}</span>
+      <span class="log-event">${h(ev.event || '?')}</span>
+      <span class="log-data" id="ld${i}">${h(full) || '<span style="opacity:.3">—</span>'}</span>`;
+                scroll.appendChild(row);
+            });
+
+            card.appendChild(scroll);
+            return card;
+        }
+
+        /* ═══════════════ HELPERS ════════════════════════════════════════════════ */
+
+        function getSteps(events) {
+            const starts = {}, out = [];
+            events.forEach(e => {
+                if (e.event === 'step_start') starts[e.step_id] = new Date(e.ts || e.timestamp || 0);
+                if (e.event === 'step_done') {
+                    const s = starts[e.step_id];
+                    const dur = s ? Math.max(0, Math.round(new Date(e.ts || e.timestamp || 0) - s)) : 0;
+                    out.push({
+                        id: e.step_id || '?',
+                        action: e.result?.action || '?',
+                        success: e.result?.success ?? true,
+                        desc: e.result?.strategy_used ? 'via ' + e.result.strategy_used
+                            : (e.result?.url || e.result?.typed || e.result?.error || '').toString().slice(0, 60),
+                        dur,
+                    });
+                }
+            });
+            return out;
+        }
+
+        function sectionHeader(title) {
+            const s = el('div', 'sec');
+            s.innerHTML = `${h(title)} <span class="sec-line"></span>`;
+            return s;
+        }
+
+        function emptyCard(title, sub) {
+            const d = el('div');
+            d.innerHTML = `<div class="empty"><div class="empty-icon">∅</div>
+    <div class="empty-title">${h(title)}</div>
+    <div class="empty-sub">${h(sub)}</div></div>`;
+            return d;
+        }
+
+        function el(tag, cls = '') {
+            const e = document.createElement(tag);
+            if (cls) e.className = cls;
+            return e;
+        }
+
+        function h(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function md(text) {
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`([^`]+)`/g, '<code style="font-family:var(--mono);background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
+                .replace(/^[•]\s+(.+)$/gm, '<div style="padding:2px 0 2px 8px;border-left:2px solid var(--border2)">$1</div>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function humanCap(c) {
+            return { check_member_balance: 'Balance Lookup', update_account_status: 'Account Update' }[c] || c || '—';
+        }
+
+        function outcomeLabel(o) {
+            return { success: '✅ Success', business_outcome: '⚑ Business Outcome', hard_failure: '❌ Hard Failure' }[o] || o || 'unknown';
+        }
+
+        function togRow(i) {
+            document.getElementById('lr' + i)?.classList.toggle('expanded');
+        }
+
+        function applyF(btn) {
+            document.querySelectorAll('.filt').forEach(b => b.classList.remove('on'));
+            btn.classList.add('on');
+            const f = btn.dataset.f;
+            document.querySelectorAll('.log-scroll .log-row').forEach(r => {
+                r.style.display = (f === 'all' || r.dataset.cat === f) ? '' : 'none';
+            });
+        }
+
+        function openLB(src, cap) {
+            document.getElementById('lb-img').src = src;
+            document.getElementById('lb-cap').textContent = cap;
+            document.getElementById('lb').classList.add('open');
+        }
+        function closeLB() { document.getElementById('lb').classList.remove('open'); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+    </script>
+</body>
+
+</html>
