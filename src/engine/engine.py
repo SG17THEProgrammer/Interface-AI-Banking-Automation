@@ -66,7 +66,9 @@ class ReplayEngine:
         parameters: dict,
         log_suffix: str = "run",
         non_interactive: bool = True,
-        job_dir: str = None,          # ← NEW: per-job evidence directory
+        job_dir: str = None,
+        hitl_job_id: str = None,      # ← when set, signals chat UI instead of terminal
+        on_step_start=None,
     ) -> ReplayResult:
         """
         job_dir: if provided, all evidence for this run (log, screenshots,
@@ -83,7 +85,7 @@ class ReplayEngine:
         os.makedirs(run_dir, exist_ok=True)
 
         # HITLController scoped to this run's directory
-        hitl = HITLController(evidence_dir=run_dir)
+        hitl = HITLController(evidence_dir=run_dir, job_id=hitl_job_id)
 
         def log(entry: dict):
             entry["ts"] = datetime.now(timezone.utc).isoformat()
@@ -118,6 +120,12 @@ class ReplayEngine:
                 for step in artifact.steps:
                     log({"event": "step_start", "step_id": step.step_id,
                          "action": step.action, "url": page.url})
+
+                    if on_step_start:
+                        try:
+                            on_step_start(step.step_id, step.action, step.description)
+                        except Exception:
+                            pass
 
                     if step.action in ("assert", "extract") or steps_completed > 2:
                         outcome = check_for_business_outcome(page)
@@ -190,6 +198,11 @@ class ReplayEngine:
                             if hitl_result["resolved"]:
                                 log({"event": "hitl_resolved", "step_id": step.step_id,
                                      "url_after": hitl_result["url_after"]})
+                                # Wait for page to settle after human intervention
+                                try:
+                                    page.wait_for_load_state("domcontentloaded", timeout=5000)
+                                except Exception:
+                                    pass
                                 steps_completed += 1
                                 continue
 

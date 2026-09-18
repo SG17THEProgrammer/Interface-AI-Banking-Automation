@@ -26,9 +26,25 @@ def search():
 
 @app.route("/search", methods=["POST"])
 def search_submit():
-    member_id = request.form.get("member_id", "").strip()
+    member_id   = request.form.get("member_id", "").strip()
+    search_type = request.form.get("search_type", "id").strip()
+
     if not member_id:
-        return render_template("search.html", error="Please enter a Member ID.")
+        return render_template("search.html", error="Please enter a Member ID or name.")
+
+    if search_type == "name":
+        # Search by name substring (case-insensitive)
+        from database import list_members
+        query   = member_id.lower()
+        matches = [m for m in list_members() if query in m["name"].lower()]
+        if len(matches) == 1:
+            return redirect(url_for("member_detail", member_id=matches[0]["id"]))
+        elif len(matches) > 1:
+            return render_template("search.html", search_results=matches, query=member_id)
+        else:
+            return render_template("search.html",
+                error=f"No member found with name matching '{member_id}'.")
+
     return redirect(url_for("member_detail", member_id=member_id))
 
 

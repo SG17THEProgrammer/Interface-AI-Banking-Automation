@@ -37,7 +37,8 @@ class InterventionRequest:
     screenshot_path: Optional[str]
     context: dict
     severity: str = "medium"
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat())
     status: str = "pending"
     human_notes: str = ""
 
@@ -53,8 +54,9 @@ class InterventionRequest:
 
 
 class HITLController:
-    def __init__(self, evidence_dir: str = "evidence"):
+    def __init__(self, evidence_dir: str = "evidence", job_id: str = None):
         self.evidence_dir = evidence_dir
+        self.job_id = job_id      # set when running inside the chat UI process
         self._counter = 0
 
     def _next_id(self) -> str:
@@ -85,7 +87,7 @@ class HITLController:
         severity: str = "medium",
         non_interactive: bool = False,
     ) -> dict:
-        request_id  = self._next_id()
+        request_id = self._next_id()
         current_url = page.url
 
         # Screenshot + annotation
@@ -123,6 +125,10 @@ class HITLController:
             return {"resolved": True, "url_after": current_url,
                     "human_notes": "auto-resolved", "duration_seconds": 0}
 
+        # Chat UI mode — use hitl_bridge to signal and wait
+        if self.job_id:
+            return self._escalate_via_bridge(req, interventions_dir, page)
+
         # Interactive mode — print notice, block on input()
         self._print_intervention_notice(req, screenshot_path)
         req.status = "in_progress"
@@ -130,21 +136,84 @@ class HITLController:
 
         start = time.time()
         try:
-            human_notes = input("  Your notes (optional), then press ENTER: ").strip()
+            human_notes = input(
+                "  Your notes (optional), then press ENTER: ").strip()
         except (KeyboardInterrupt, EOFError):
             human_notes = "interrupted"
 
-        duration   = time.time() - start
-        url_after  = page.url
+        duration = time.time() - start
+        url_after = page.url
         req.status = "resolved"
         req.human_notes = human_notes
         req.save(interventions_dir)
 
-        print(f"\n  [OK] Control returned to automation. Resuming from: {url_after}\n")
+        print(
+            f"\n  [OK] Control returned to automation. Resuming from: {url_after}\n")
         logger.info(f"[hitl] {request_id} resolved in {duration:.1f}s")
 
         return {"resolved": True, "url_after": url_after,
                 "human_notes": human_notes, "duration_seconds": duration}
+
+    def _escalate_via_bridge(
+        self,
+        req: InterventionRequest,
+        interventions_dir: str,
+        page,
+    ) -> dict:
+        """
+        Signal the chat UI via hitl_bridge (no circular import),
+        then block on the shared threading.Event until the user
+        clicks Resume in the browser.
+        """
+        import time
+        try:
+            import hitl_bridge
+        except ImportError:
+            logger.warning("[hitl] hitl_bridge not available — auto-resolving")
+            req.status = "resolved"
+            req.human_notes = "auto-resolved (bridge unavailable)"
+            req.save(interventions_dir)
+            return {"resolved": True, "url_after": page.url,
+                    "human_notes": "auto-resolved", "duration_seconds": 0}
+
+        # Tell the bridge we're waiting
+        hitl_bridge.signal_waiting(
+            self.job_id,
+            req.current_step_id,
+            req.reason,
+            req.current_url,
+            req.to_dict(),
+        )
+        req.status = "in_progress"
+        req.save(interventions_dir)
+        logger.warning(
+            f"[hitl] Waiting for browser resolution of {req.request_id}")
+
+        # Block here — engine thread sleeps until user clicks Resume
+        event = hitl_bridge.resume_events.get(self.job_id)
+        start = time.time()
+        if event:
+            event.wait(timeout=600)   # 10-minute max wait
+            event.clear()             # reset for next possible escalation
+
+        duration = time.time() - start
+        notes = hitl_bridge.get_context(self.job_id).get("notes", "")
+
+        # Clear waiting flag
+        ctx = hitl_bridge.hitl_context.get(self.job_id, {})
+        ctx["waiting"] = False
+
+        req.status = "resolved"
+        req.human_notes = notes or "Resolved via chat UI"
+        req.save(interventions_dir)
+
+        logger.info(f"[hitl] Resumed after {duration:.1f}s. URL: {page.url}")
+        return {
+            "resolved":         True,
+            "url_after":        page.url,
+            "human_notes":      notes,
+            "duration_seconds": duration,
+        }
 
     def detect_stuck(
         self,
@@ -153,7 +222,8 @@ class HITLController:
         threshold: int = 3,
     ) -> bool:
         if consecutive_failures >= threshold:
-            logger.warning(f"[hitl] Stuck after {consecutive_failures} failures: {last_error}")
+            logger.warning(
+                f"[hitl] Stuck after {consecutive_failures} failures: {last_error}")
             return True
         return False
 

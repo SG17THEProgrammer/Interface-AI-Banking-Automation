@@ -1,0 +1,20 @@
+{
+  "request_id": "HITL_20260918_114237_002",
+  "capability_name": "check_member_balance",
+  "goal": "Look up a bank member by ID and return their current account balance and account status.",
+  "current_step_id": "s4_assert_result",
+  "current_step_description": "Assert result page loaded (balance or not-found)",
+  "reason": "None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search",
+  "current_url": "http://localhost:8080/search",
+  "screenshot_path": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\src\\..\\evidence\\jobs\\8ff5bc5e-e96b-411e-9117-c5387967ff06\\screenshots\\HITL_20260918_114237_002_annotated.png",
+  "context": {
+    "parameters": {
+      "member_id": "100001"
+    },
+    "steps_completed": 3
+  },
+  "severity": "medium",
+  "created_at": "2026-09-18T11:42:38.011113+00:00",
+  "status": "resolved",
+  "human_notes": "Resolved via chat UI"
+}

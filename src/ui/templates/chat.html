@@ -52,10 +52,11 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      max-width: 860px;
+      max-width: 1000px;
       margin: 0 auto;
       background: var(--surface);
       box-shadow: 0 0 0 1px var(--border), var(--shadow-md);
+      position: relative;
     }
 
     /* ── Header ─────────────────────────────────────────────────────────── */
@@ -160,7 +161,7 @@
     }
 
     .pill {
-      padding: 4px 12px;
+      padding: 2px 12px;
       border-radius: 100px;
       border: 1px solid #c9d8f2;
       background: var(--brand-light);
@@ -170,10 +171,11 @@
       cursor: pointer;
       transition: all .15s;
       white-space: nowrap;
+      margin: 4px 1px;
     }
 
     .pill:hover {
-      background: var(--brand);
+      background: var(--brand-btn);
       color: #fff;
       border-color: var(--brand);
     }
@@ -677,6 +679,233 @@
       border-color: var(--brand);
       background: var(--brand-light);
     }
+
+    /* ── HITL banner ─────────────────────────────────────────────────────── */
+    .hitl-banner {
+      margin-top: 12px;
+      padding: 16px;
+      background: #fdf4ff;
+      border: 1.5px solid #e9d5ff;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .hitl-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .hitl-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #a855f7;
+      flex-shrink: 0;
+      animation: pulse 1.4s infinite;
+    }
+
+    .hitl-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #7c3aed;
+    }
+
+    .hitl-desc {
+      font-size: 12.5px;
+      color: #4b5563;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .hitl-detail-box {
+      background: #1e1b4b;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .hitl-detail-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px;
+      align-items: baseline;
+      font-size: 12px;
+    }
+
+    .hitl-detail-key {
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 500;
+      padding-top: 1px;
+    }
+
+    .hitl-detail-val {
+      color: #e2e8f0;
+      word-break: break-word;
+    }
+
+    code.hitl-detail-val {
+      font-family: var(--mono);
+      background: rgba(255, 255, 255, .1);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11.5px;
+    }
+
+    .hitl-calllog {
+      color: #fbbf24;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(0, 0, 0, .25);
+      padding: 6px 8px;
+      border-radius: 4px;
+    }
+
+    .hitl-detail-link {
+      color: #93c5fd;
+      font-size: 11.5px;
+      word-break: break-all;
+    }
+
+    .hitl-howto {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+
+    .hitl-howto-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #15803d;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 2px;
+    }
+
+    .hitl-resume-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .hitl-notes-input {
+      flex: 1;
+      min-width: 160px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #e5e7eb;
+      background: #fff;
+      color: #1c2033;
+      font-size: 12.5px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .hitl-notes-input:focus {
+      border-color: #a855f7;
+    }
+
+    .hitl-resume-btn {
+      padding: 7px 18px;
+      border-radius: 8px;
+      background: #7c3aed;
+      border: none;
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+
+    .hitl-resume-btn:hover {
+      background: #6d28d9;
+    }
+
+    .hitl-resume-btn:disabled {
+      opacity: .5;
+      cursor: default;
+    }
+
+    .hitl-status-msg {
+      margin-top: 8px;
+      font-size: 11.5px;
+      color: #6b7280;
+      min-height: 16px;
+    }
+
+    /* ── Progress pulse ─────────────────────────────────────────────────── */
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .4;
+        transform: scale(.7);
+      }
+    }
+
+    /* ── Members panel ──────────────────────────────────────────────────── */
+    .member-card {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all .15s;
+      background: var(--brand-light);
+    }
+
+    .member-card:hover {
+      border-color: var(--brand);
+      background: var(--brand-light);
+    }
+
+    .member-id {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .member-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+
+    .member-status {
+      font-size: 11px;
+    }
+
+    .member-status.active {
+      color: var(--success);
+    }
+
+    .member-status.frozen {
+      color: var(--warn);
+    }
+
+    .member-status.closed {
+      color: var(--danger);
+    }
   </style>
 </head>
 
@@ -708,19 +937,24 @@
       <div class="header-badge">
         <div class="status-dot" id="status-dot"></div>
         <span id="status-text">Connecting…</span>
-              <button class="audit-btn" onclick="openAudit()">Audit log</button>
-      <button class="audit-btn" onclick="clearHistory();location.reload()" title="Clear chat history">Clear chat</button>
+        <button class="audit-btn" onclick="openAudit()">Audit log</button>
+        <button class="audit-btn" onclick="clearHistory();location.reload()" title="Clear chat history">Clear
+          chat</button>
       </div>
     </header>
+
+    <span style="margin-left:auto">
+      <button class="pill" onclick="toggleMembers()" id="members-btn">👥 Members</button>
+    </span>
 
     <!-- Quick-action pills -->
     <div class="pill-strip">
       <span class="pill-label">Try:</span>
-      <span class="pill" onclick="fill(&quot;What is Alice's balance?&quot;)">Alice's balance</span>
-      <span class="pill" onclick="fill(&quot;Check member 100002&quot;)">Check member 100002</span>
-      <span class="pill" onclick="fill(&quot;Freeze Carol's account&quot;)">Freeze Carol</span>
-      <span class="pill" onclick="fill(&quot;Close Eva's account&quot;)">Close Eva's account</span>
-      <span class="pill" onclick="fill(&quot;Reactivate account 100003&quot;)">Reactivate 100003</span>
+      <span class="pill" onclick="fill('What is Alice\'s balance?')">Alice's balance</span>
+      <span class="pill" onclick="fill('Check member 100002')">Check member 100002</span>
+      <span class="pill" onclick="fill('Freeze Carol\'s account')">Freeze Carol</span>
+      <span class="pill" onclick="fill('Close Eva\'s account')">Close Eva's account</span>
+      <span class="pill" onclick="fill('Reactivate account 100003')">Reactivate 100003</span>
     </div>
 
     <!-- Messages -->
@@ -743,10 +977,10 @@
 
     <!-- Suggestion chips (disappear after first message) -->
     <div class="suggestions" id="suggestions">
-      <span class="sug" onclick="fill(&quot;What is Bob's balance?&quot;)">What is Bob's balance?</span>
-      <span class="sug" onclick="fill(&quot;What is the status of Carol?&quot;)">Status of Carol?</span>
-      <span class="sug" onclick="fill(&quot;Freeze account 100001&quot;)">Freeze account 100001</span>
-      <span class="sug" onclick="fill(&quot;Check member 100004&quot;)">Check member 100004</span>
+      <span class="sug" onclick="fill('What is Bob\'s balance?')">What is Bob's balance?</span>
+      <span class="sug" onclick="fill('What is the status of Carol?')">Status of Carol?</span>
+      <span class="sug" onclick="fill('Freeze account 100001')">Freeze account 100001</span>
+      <span class="sug" onclick="fill('Check member 100004')">Check member 100004</span>
 
     </div>
 
@@ -762,6 +996,48 @@
           <path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" />
         </svg>
       </button>
+    </div>
+
+    <!-- Members panel -->
+    <div id="members-panel" style="display:none;position:absolute;top:0;right:0;width:100%;z-index:50">
+      <div
+        style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:16px 20px;margin:0 20px;max-width:820px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">👥 Available Members</span>
+          <button onclick="toggleMembers()"
+            style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted)">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">
+          <div class="member-card" onclick="fill(&quot;What is Alice Johnson's balance?&quot;)">
+            <div class="member-id">100001</div>
+            <div class="member-name">Alice Johnson</div>
+            <div class="member-status active">Active · Savings · $4,521.00</div>
+          </div>
+          <div class="member-card" onclick="fill('Check member 100002')">
+            <div class="member-id">100002</div>
+            <div class="member-name">Bob Martinez</div>
+            <div class="member-status active">Active · Checking · $12,340.50</div>
+          </div>
+          <div class="member-card" onclick="fill('What is the status of Carol?')">
+            <div class="member-id">100003</div>
+            <div class="member-name">Carol Williams</div>
+            <div class="member-status frozen">Frozen · Savings · $750.25</div>
+          </div>
+          <div class="member-card" onclick="fill('Check member 100004')">
+            <div class="member-id">100004</div>
+            <div class="member-name">David Lee</div>
+            <div class="member-status active">Active · Investment · $88,000.00</div>
+          </div>
+          <div class="member-card" onclick="fill(&quot;What is Eva's balance?&quot;)">
+            <div class="member-id">100005</div>
+            <div class="member-name">Eva Chen</div>
+            <div class="member-status closed">Closed · Checking · $0.00</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--text-muted)">
+          Click any member to auto-fill the chat. You can also type their name or ID directly.
+        </div>
+      </div>
     </div>
 
   </div><!-- /app -->
@@ -845,6 +1121,20 @@
     }
 
     // ── Input handling ────────────────────────────────────────────────────────
+
+    function toggleMembers() {
+      const panel = document.getElementById('members-panel');
+      const isVisible = panel.style.display !== 'none';
+      panel.style.display = isVisible ? 'none' : 'block';
+    }
+    // Close panel when clicking outside
+    document.addEventListener('click', e => {
+      const panel = document.getElementById('members-panel');
+      const btn = document.getElementById('members-btn');
+      if (panel && !panel.contains(e.target) && !btn?.contains(e.target)) {
+        panel.style.display = 'none';
+      }
+    });
 
     function fill(text) {
       const el = $('inp');
@@ -991,21 +1281,42 @@
     }
 
     async function pollJob(jobId, runRow, attempt = 0) {
-      if (attempt > 90) {
-        runRow.querySelector('.bubble').innerHTML = '❌ Request timed out after 90 seconds.';
+      if (attempt > 240) {  // 6 min max
+        runRow.querySelector('.bubble').innerHTML = '❌ Request timed out.';
         return;
       }
-      await sleep(1500);
+      await sleep(1200);
       try {
         const res = await fetch(`/api/job/${jobId}`);
         const job = await res.json();
-        if (job.status !== 'done') { pollJob(jobId, runRow, attempt + 1); return; }
 
+        // ── Live step progress (status=running) ──────────────────────────────
+        if (job.status === 'running') {
+          updateProgressBubble(runRow, job);
+          pollJob(jobId, runRow, attempt + 1);
+          return;
+        }
+
+        // ── HITL waiting ──────────────────────────────────────────────────────
+        if (job.status === 'hitl_waiting') {
+          showHITLBanner(job, jobId, runRow);
+          pollJob(jobId, runRow, attempt + 1);
+          return;
+        }
+
+        // Clear any HITL banner when status returns to running/done
+        runRow.querySelector('.hitl-banner')?.remove();
+
+        if (job.status !== 'done') {
+          pollJob(jobId, runRow, attempt + 1);
+          return;
+        }
+
+        // ── Done ──────────────────────────────────────────────────────────────
         const card = buildCard(job.outputs);
         const warn = job.warning ? buildWarn(job.warning) : '';
         runRow.querySelector('.bubble').innerHTML = md(job.reply) + card + warn;
 
-        // Meta row: duration + steps + Details button
         const msgBody = runRow.querySelector('.msg-body');
         let metaRow = runRow.querySelector('.meta-row');
         if (!metaRow) {
@@ -1021,6 +1332,191 @@
         saveHistory();
       } catch {
         runRow.querySelector('.bubble').innerHTML = '❌ Lost connection while waiting for result.';
+      }
+    }
+
+    // ── Live progress bubble ──────────────────────────────────────────────────
+
+    const ACTION_LABELS = {
+      navigate: { icon: '🌐', verb: 'Navigating to' },
+      type: { icon: '⌨️', verb: 'Typing into' },
+      click: { icon: '🖱️', verb: 'Clicking' },
+      select: { icon: '📋', verb: 'Selecting' },
+      assert: { icon: '🔍', verb: 'Checking' },
+      extract: { icon: '📤', verb: 'Extracting' },
+      wait: { icon: '⏳', verb: 'Waiting for' },
+    };
+
+    // Track which steps have been shown so we build a running log
+    const _stepLog = {};  // jobId → [{ icon, text, done }]
+
+    function updateProgressBubble(runRow, job) {
+      const bubble = runRow.querySelector('.bubble');
+      const live = job.live_step;
+
+      if (!live) {
+        // Just started, no step yet
+        bubble.innerHTML = `<div style="color:var(--text-muted);font-size:13px">
+      ⚙️ Initialising automation…</div>`;
+        return;
+      }
+
+      const jobId = job.job_id || '';
+      if (!_stepLog[jobId]) _stepLog[jobId] = [];
+
+      const log = _stepLog[jobId];
+      const label = ACTION_LABELS[live.action] || { icon: '⚡', verb: 'Running' };
+      const desc = live.description || live.step_id;
+      const entry = `${label.icon} ${label.verb} <span style="color:var(--brand);font-weight:500">${esc(desc)}</span>`;
+
+      // Only add if this step isn't already the last one
+      const last = log[log.length - 1];
+      if (!last || last.id !== live.step_id) {
+        // Mark previous step as done
+        if (last) last.done = true;
+        log.push({ id: live.step_id, html: entry, done: false });
+      }
+
+      // Render the log
+      const lines = log.map((l, i) => {
+        if (l.done) {
+          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--text-muted);font-size:12.5px">
+        <span style="color:#16803c;font-size:11px">✓</span>
+        <span style="text-decoration:none;opacity:.7">${l.html}</span>
+      </div>`;
+        }
+        // Current step — show with pulsing indicator
+        return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);animation:pulse 1s infinite"></span>
+      <span>${l.html}</span>
+    </div>`;
+      }).join('');
+
+      bubble.innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+      🤖 Automation in progress
+    </div>
+    ${lines}`;
+      scroll();
+    }
+
+    // ── HITL banner ────────────────────────────────────────────────────────────
+    function showHITLBanner(job, jobId, runRow) {
+      if (runRow.querySelector('.hitl-banner')) return;
+
+      const bubble = runRow.querySelector('.bubble');
+      const banner = document.createElement('div');
+      banner.className = 'hitl-banner';
+
+      const stepId = esc(job.hitl_step || 'unknown');
+      const rawReason = job.hitl_reason || '';
+      // Split technical detail from summary
+      const reasonLines = rawReason.split('\n').map(l => l.trim()).filter(Boolean);
+      const mainReason = esc(reasonLines[0] || '');
+      const callLog = reasonLines.slice(1).map(l => esc(l)).join('\n');
+      const url = esc(job.hitl_url || 'http://localhost:8080/search');
+
+      // Human-readable explanation of what happened
+      let whatHappened = '';
+      let howToFix = '';
+      if (rawReason.toLowerCase().includes('locator') || rawReason.toLowerCase().includes('exhausted')) {
+        whatHappened = `The bot tried to find and click an element on the page but <strong>could not locate it</strong> — the element may not be visible, the page may not have loaded fully, or the app UI changed.`;
+        howToFix = `<ol style="margin:8px 0 0 16px;padding:0;font-size:12px;line-height:1.8;color:var(--text-muted)">
+      <li>Open <a href="${url}" target="_blank" style="color:var(--brand-btn)">the banking app</a> in a new tab</li>
+      <li>Make sure the page has fully loaded</li>
+      <li>Perform the action manually: <strong>${esc(stepId.replace(/_/g, ' '))}</strong></li>
+      <li>Once the page is in the correct state, come back here and click <strong>Resume</strong></li>
+    </ol>`;
+      } else if (rawReason.toLowerCase().includes('timeout')) {
+        whatHappened = `The bot waited too long for a page element to appear. The page may be slow or the app is unresponsive.`;
+        howToFix = `<ol style="margin:8px 0 0 16px;padding:0;font-size:12px;line-height:1.8;color:var(--text-muted)">
+      <li>Check that the banking app at <a href="http://localhost:8080" target="_blank" style="color:var(--brand-btn)">localhost:8080</a> is responding</li>
+      <li>Refresh the banking app if needed</li>
+      <li>Come back here and click <strong>Resume</strong></li>
+    </ol>`;
+      } else {
+        whatHappened = `The automation encountered an unexpected state and cannot continue automatically.`;
+        howToFix = `<ol style="margin:8px 0 0 16px;padding:0;font-size:12px;line-height:1.8;color:var(--text-muted)">
+      <li>Open <a href="${url}" target="_blank" style="color:var(--brand-btn)">the banking app</a></li>
+      <li>Resolve the issue manually and navigate to the correct page</li>
+      <li>Click <strong>Resume</strong> below</li>
+    </ol>`;
+      }
+
+      banner.innerHTML = `
+    <div class="hitl-header">
+      <span class="hitl-dot"></span>
+      <span class="hitl-title">Human Intervention Required</span>
+    </div>
+    <p class="hitl-desc">${whatHappened}</p>
+
+    <div class="hitl-detail-box">
+      <div class="hitl-detail-row">
+        <span class="hitl-detail-key">Stuck at step</span>
+        <code class="hitl-detail-val">${stepId}</code>
+      </div>
+      <div class="hitl-detail-row">
+        <span class="hitl-detail-key">What failed</span>
+        <span class="hitl-detail-val">${mainReason}</span>
+      </div>
+      ${callLog ? `<div class="hitl-detail-row">
+        <span class="hitl-detail-key">Technical detail</span>
+        <pre class="hitl-calllog">${callLog}</pre>
+      </div>` : ''}
+      <div class="hitl-detail-row">
+        <span class="hitl-detail-key">Browser URL</span>
+        <a href="${url}" target="_blank" class="hitl-detail-link">${url}</a>
+      </div>
+    </div>
+
+    <div class="hitl-howto">
+      <div class="hitl-howto-title">How to resolve</div>
+      ${howToFix}
+    </div>
+
+    <div class="hitl-resume-row">
+      <input id="hitl-notes-${jobId}" type="text" placeholder="Optional notes about what you did…" class="hitl-notes-input">
+      <button onclick="resolveHITL('${jobId}', this)" class="hitl-resume-btn">
+        ✅ I've fixed it — Resume
+      </button>
+    </div>
+    <div id="hitl-status-${jobId}" class="hitl-status-msg"></div>
+  `;
+
+      bubble.appendChild(banner);
+      scroll();
+      saveHistory();
+    }
+
+    async function resolveHITL(jobId, btn) {
+      const notes = document.getElementById(`hitl-notes-${jobId}`)?.value || '';
+      const statusEl = document.getElementById(`hitl-status-${jobId}`);
+      btn.disabled = true;
+      btn.textContent = 'Resuming…';
+      // Permanently disable to prevent double-submit
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'default';
+      if (statusEl) statusEl.textContent = 'Signalling the automation to resume…';
+
+      try {
+        const res = await fetch(`/api/job/${jobId}/resolve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          if (statusEl) statusEl.textContent = '✅ Resumed — waiting for automation to finish…';
+          // Banner will be removed by next poll cycle when status != hitl_waiting
+        } else {
+          btn.disabled = false;
+          btn.textContent = '✅ I\'ve fixed it — Resume';
+          if (statusEl) statusEl.textContent = `Error: ${data.error}`;
+        }
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = '✅ I\'ve fixed it — Resume';
+        if (statusEl) statusEl.textContent = `Network error: ${e.message}`;
       }
     }
 

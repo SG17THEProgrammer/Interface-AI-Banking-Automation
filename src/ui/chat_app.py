@@ -14,6 +14,7 @@ import threading
 import time
 import uuid
 import urllib.request
+import hitl_bridge
 
 from flask import Flask, render_template, request, jsonify
 
@@ -33,6 +34,7 @@ BANKING_URL  = "http://localhost:8080"
 
 _jobs: dict[str, dict] = {}
 _lock = threading.Lock()
+# _hitl_events: dict[str, threading.Event] = {}  # job_id → resume event
 
 
 # ── Suppress /health and /api/health-proxy from Werkzeug access log ────────
@@ -130,6 +132,14 @@ def job_status(job_id: str):
         job = _jobs.get(job_id)
     if not job:
         return jsonify({"error": "unknown job"}), 404
+    # Inject live HITL context if waiting
+    if hitl_bridge.is_waiting(job_id):
+        ctx = hitl_bridge.get_context(job_id)
+        job["status"]       = "hitl_waiting"
+        job["hitl_step"]    = ctx.get("step_id")
+        job["hitl_reason"]  = ctx.get("reason")
+        job["hitl_url"]     = ctx.get("url")
+        job["job_id"] = job_id
     return jsonify(job)
 
 
@@ -221,6 +231,21 @@ def audit_log():
         return jsonify({"error": str(e)}), 502
 
 
+@app.route("/api/job/<job_id>/resolve", methods=["POST"])
+def job_resolve(job_id: str):
+    """Human has resolved the intervention — unblock the engine thread."""
+    if not hitl_bridge.is_waiting(job_id):
+        # Already resolved — return ok silently (idempotent)
+        return jsonify({"ok": True, "already_resolved": True})
+
+@app.route("/api/job/<job_id>/hitl")
+def job_hitl_status(job_id: str):
+    """Returns current HITL context if the job is waiting for intervention."""
+    if not hitl_bridge.is_waiting(job_id):
+        return jsonify({"waiting": False})
+    ctx = hitl_bridge.get_context(job_id)
+    return jsonify({"waiting": True, **ctx})
+
 @app.route("/api/health-proxy")
 def health_proxy():
     try:
@@ -238,12 +263,26 @@ def _run(job_id: str, cap, subject_label: str):
     os.makedirs(job_dir, exist_ok=True)
 
     try:
+        hitl_bridge.register_job(job_id)
+
+        # Live progress: write current step to job dict during execution
+        # The engine calls this via a callback
+        def _on_step(step_id: str, action: str, description: str):
+            with _lock:
+                if job_id in _jobs:
+                    _jobs[job_id]["live_step"] = {
+                        "step_id":     step_id,
+                        "action":      action,
+                        "description": description,
+                    }
+
         engine = ReplayEngine(
             evidence_dir=EVIDENCE_DIR,
             headless=True,
             max_retries_per_step=2,
-            hitl_enabled=False,
+            hitl_enabled=True,
         )
+
         artifact = cap.artifact
         params   = cap.parameters
 
@@ -253,9 +292,11 @@ def _run(job_id: str, cap, subject_label: str):
         result = engine.run(
             artifact=artifact,
             parameters=params,
-            log_suffix="run",           # file becomes replay_run.log inside job_dir
-            non_interactive=True,
-            job_dir=job_dir,            # all evidence scoped to this job
+            log_suffix="run",
+            non_interactive=False,
+            job_dir=job_dir,
+            hitl_job_id=job_id,        # engine uses this to signal UI
+            on_step_start=_on_step,
         )
 
         with _lock:
@@ -272,6 +313,9 @@ def _run(job_id: str, cap, subject_label: str):
                 "log_entries":   result.log_entries,
                 "job_dir":       job_dir,
             }
+            # Clean up the resume event
+            hitl_bridge.cleanup(job_id)
+
     except Exception as e:
         logger.exception(f"[chat] Job {job_id} failed")
         with _lock:
