@@ -331,4 +331,3 @@ No flakiness tracking. Replaying N times and reporting per-step failure rates wo
 5. **Vision fallback** — screenshot → vision model → coordinates, as a last resort after all DOM strategies fail
 6. **Multi-run stability signal** — replay N times, report a flakiness percentage per step, gate unattended replay on a stability threshold
 
-```
