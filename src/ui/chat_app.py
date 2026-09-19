@@ -50,9 +50,14 @@ class _HealthFilter(logging.Filter):
             return False
         return True
 
-
+# filter out health check logs from your Flask/Werkzeug server
 logging.getLogger("werkzeug").addFilter(_HealthFilter())
 
+# Werkzeug is the foundational German Swiss-army knife utility library that Flask uses to handle web requests.
+# The name means "tool" or "toolkit"
+
+# We can change its display name to whatever we want
+# werkzeug_logger.name = "any_suitable_name"
 
 # ── Pages ────────────────────────────────────────────────────────────────
 

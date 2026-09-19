@@ -1,159 +1,429 @@
 # MemberLink Automation System
-### Computer-Use Automation — Redesigned Architecture
+### Computer-Use Automation — Record Once, Replay Deterministically
 
-A "Record Once → Replay Deterministically" engine with a **user-facing chat interface**.
-Users type natural language; the system drives the legacy banking UI and returns structured results.
+A production-grade "Record Once → Replay Deterministically" engine that automates legacy banking UIs lacking modern APIs. Users type natural language into a chat interface; the system drives a legacy banking app and returns structured results — with full Human-in-the-Loop (HITL) escalation when automation gets stuck.
 
 ---
 
-## Quick Start
+## What This Project Does
 
-```bash
-# 1. Set up
-python -m venv venv && source venv/bin/activate    # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-playwright install chromium
+The system has four layers that execute in strict sequence:
 
-# 2. Start everything (chat UI + banking app)
-cd src
-python main.py                   # defaults to --mode chat
-
-# 3. Open http://localhost:5000 in your browser
 ```
 
-That's it. The chat UI is at **http://localhost:5000**.
-The legacy banking app is at **http://localhost:8080** (for direct inspection).
+[Goal + Target URL]
 
----
+         ↓
 
-## What You Can Do in the Chat UI
+① Discovery Agent  (LLM-driven, runs ONCE — records what to do)
 
-Type natural language — no IDs required if you use a name:
+         ↓ produces
 
-| What you type | What happens |
-|---|---|
-| `What's Alice's balance?` | Looks up member 100001, returns balance + status |
-| `Check member 100002` | Looks up Bob Martinez |
-| `What is the status of Carol?` | Returns account status for 100003 |
-| `Freeze Carol's account` | Updates 100003 status → Frozen (with modal confirmation) |
-| `Close account 100005` | Updates Eva Chen → Closed |
-| `Reactivate account 100003` | Sets status → Active |
-| `Freeze 100001 reason RISK-001` | Update with a reason code |
+② Capability Artifact  (typed JSON contract, versioned)
 
-The **Audit log** button shows every status change made during the session.
+         ↓ consumed by
 
----
+③ Deterministic Replay Engine  (no LLM — runs every time, fast)
 
-## Other Modes
+         ↓ handles
 
-```bash
-# Full capability demo — runs balance + update + verify in sequence
-python main.py --mode demo
+④ HITL Escalation  (human takes the live browser session, then hands back)
 
-# Replay a specific member without the chat UI
-python main.py --mode replay --member 100002
-
-# Start only the banking app (for manual browser testing)
-python main.py --mode server
-
-# HITL demo — injects broken locators, shows escalation + intervention file
-python main.py --mode hitl-test --auto     # auto-resolve (no browser needed)
-python main.py --mode hitl-test            # interactive (browser opens, you fix it)
 ```
+
+**Two capabilities are implemented end-to-end:**
+- `check_member_balance` — look up any member's balance, status, and name
+- `update_account_status` — freeze, close, or reactivate an account (with modal confirmation)
+
+Both are exercised via a natural-language chat UI at `http://localhost:5000`.
 
 ---
 
 ## Project Structure
 
+
 ```
+
 interface-ai/
 ├── requirements.txt
 ├── README.md
+├── REPORT.md
 └── src/
-    ├── main.py                      ← Thin orchestrator, all modes
-    ├── artifact.py                  ← CapabilityArtifact schema (data contract)
-    ├── guardrails.py                ← URL allowlist, action gating, PII redaction
-    │
-    ├── capabilities/                ← Pre-built artifacts for each flow
-    │   ├── check_balance.py         ← Balance + status lookup
-    │   ├── update_status.py         ← Account status update (with modal)
-    │   └── registry.py              ← Intent router: text → capability + params
-    │
-    ├── engine/                      ← Deterministic replay (no LLM)
-    │   ├── engine.py                ← Orchestration loop, ReplayResult
-    │   ├── executor.py              ← Single-step execution + checkpoints
-    │   ├── extractor.py             ← Output extraction, business-outcome detection
-    │   └── locator.py               ← Multi-strategy element resolution
-    │
-    ├── hitl/                        ← Human-in-the-loop escalation
-    │   ├── controller.py            ← Pause/resume lifecycle, intervention JSON
-    │   └── annotator.py             ← Screenshot annotation with error banner
-    │
-    ├── ui/                          ← User-facing interface
-    │   ├── chat_app.py              ← Flask chat server (port 5000)
-    │   └── templates/chat.html      ← Chat UI — what the user sees
-    │
-    └── target_app/                  ← Mock legacy banking app (port 8080)
-        ├── app.py                   ← Flask routes (thin layer)
-        ├── database.py              ← In-memory store with real mutation
-        └── templates/               ← Legacy-style HTML (no test IDs)
+├── main.py                        ← Single entry point for all modes
+├── artifact.py                    ← CapabilityArtifact schema (the data contract)
+├── guardrails.py                  ← URL allowlist, action gating, PII*(Personally Identifiable Information) redaction
+├── hitl_bridge.py                 ← Threading bridge between chat server and HITL controller
+│
+├── capabilities/                  ← Pre-built artifacts for each flow
+│   ├── check_balance.py           ← Balance + status lookup
+│   ├── update_status.py           ← Account status update (with modal)
+│   └── registry.py                ← Intent router: user text → capability + params
+│
+├── engine/                        ← Deterministic replay (zero LLM)
+│   ├── engine.py                  ← Orchestration loop, ReplayResult, HITL integration
+│   ├── executor.py                ← Single-step execution + checkpoint verification
+│   ├── extractor.py               ← Output extraction, business-outcome detection
+│   └── locator.py                 ← Multi-strategy element resolution with fallback chains
+│
+├── hitl/                          ← Human-in-the-loop escalation
+│   ├── controller.py              ← Pause/resume lifecycle, intervention JSON, bridge mode
+│   └── annotator.py               ← Screenshot annotation with red error banner
+│
+├── ui/                            ← User-facing interface
+│   ├── chat_app.py                ← Flask chat server (port 5000), dashboard, job API
+│   └── templates/
+│       ├── chat.html              ← Real-time chat UI with live step progress + HITL banners
+│       └── dashboard.html         ← Run evidence dashboard (auto-load by job ID or manual upload)
+│
+├── discovery.py                   ← LLM Discovery Agent (Groq backend, tool-use loop)
+│
+└── target_app/                    ← Mock legacy banking app (port 8080)
+|   ├── app.py                     ← Flask routes
+|   ├── database.py                ← In-memory store with real mutation + audit log
+|   └── templates/                 ← Intentionally legacy-style HTML (no test IDs)
+|       ├── search.html
+|       ├── detail.html
+|       ├── update.html
+|       └── update_success.html
+|
+evidence/                          ← All run evidence (auto-generated)
+├── capability_artifact.json       ← Saved artifact from discovery
+├── discovery_run.log              ← LLM discovery trace (NDJSON)
+├── run.log                        ← Logs all the runs that are seen in terminal
+└── jobs/                          ← Per-chat-message evidence bundles
+└── {job_id}/
+├── replay_run.log                 ← Per-run replay traces 
+├── screenshots/                   ← Browser screenshots (annotated on failure)
+└── interventions/                 ← HITL escalation records
+
+
+<!-- These files were made and captured in first phase/design (later design changed to above) -->
+└── test-screenshots-initial-build
+└── screenshots while testing
+└── interventions-initial-build
+└── dashboard.html
+
+````
+
+---
+
+## Prerequisites
+
+- Python 3.10+
+- A [Groq](https://console.groq.com) API key (free tier is sufficient — one discovery run costs pennies)
+- Chromium (installed via Playwright)
+
+---
+
+## Setup
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/SG17THEProgrammer/Interface-AI-Banking-Automation.git
+cd interface-ai
+
+# 2. Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Install Playwright's Chromium browser
+playwright install chromium
+
+# 5. Set your Groq API key in env file
+GROQ_API_KEY=gsk_your_key_here
+
+
+````
+
+> **No Groq key?** The chat UI and all replay modes work without a key — only the `discovery` mode requires it. The repo already ships a saved `evidence/capability_artifact.json` so you can run everything else immediately.
+
+---
+
+## Running the System
+
+All modes are controlled through `src/main.py`.
+
+### Mode 1 — Chat UI (starting point)
+
+```bash
+cd src
+python main.py
+# or explicitly:
+python main.py --mode chat
+
+```
+
+This starts both servers:
+
+- **Chat UI** → `http://localhost:5000` (open this in your browser)
+- **Banking app** → `http://localhost:8080` (the legacy app being automated)
+
+The browser opens automatically. Type naturally in the chat box.
+
+---
+
+### Mode 2 — Run the LLM Discovery Agent
+
+This is the "Record Once" step. It uses the Groq LLM to drive the browser, figure out what to do, and write a `capability_artifact.json`.
+
+```bash
+cd src
+python discovery.py
+
+```
+
+You will see the agent's Observe → Decide → Act loop in the terminal. When it finishes, `evidence/capability_artifact.json` is written. The `evidence/discovery_run.log` contains the full NDJSON trace.
+
+> This requires `GROQ_API_KEY` to be set.
+
+---
+
+### Mode 3 — Deterministic Replay (no LLM)
+
+Replay the saved artifact for a specific member:
+
+```bash
+cd src
+python main.py --mode replay --member 100001
+python main.py --mode replay --member 100002
+python main.py --mode replay --member 000000   # triggers business outcome (not found)
+
 ```
 
 ---
 
-## Architecture
+### Mode 4 — Full Demo Suite
+
+Runs four scenarios back-to-back and prints results:
+
+```bash
+cd src
+python main.py --mode demo
+
+```
+
+Scenarios: balance lookup (success), balance lookup (not found / business outcome), account status update, re-verify persistence.
+
+---
+
+### Mode 5 — HITL Escalation Demo
+
+Injects deliberately broken locators to force an escalation, then demonstrates the full human-takeover-and-resume flow:
+
+```bash
+# Auto-resolve mode (headless, no browser window needed)
+cd src
+python main.py --mode hitl-test --auto
+
+# Interactive mode (browser opens, you resolve it manually)
+cd src
+python main.py --mode hitl-test
+
+```
+
+Interactive mode:
+
+1. Chromium opens and shows the banking app
+2. The bot fills in Member ID `100001`, then gets **stuck** trying to click Search (broken locators)
+3. The terminal prints `[INTERVENTION REQUIRED]` with full context
+4. You click Search manually in the browser
+5. Press **ENTER** in the terminal to hand control back
+6. The bot resumes, extracts outputs, and completes successfully
+
+Evidence is written to `evidence/interventions/` and `evidence/screenshots/`.
+
+---
+
+### Mode 6 — Banking App Only
+
+```bash
+cd src
+python main.py --mode server
+
+```
+
+Starts only the mock banking app on port 8080. Useful for manual inspection at `http://localhost:8080/search`.
+
+---
+
+## Evidence Dashboard
+
+After any run, open the dashboard to inspect what happened:
+
+**Auto mode** (from chat UI): click the **"🔍 View run details"** button next to any chat reply. It opens `http://localhost:5000/dashboard?job={job_id}` and auto-loads that job's data.
+
+**Manual mode** (for non-chat runs): open `evidence/dashboard.html` directly in a browser and drop your evidence files into the three upload zones (Logs | Screenshots | Interventions).
+
+The dashboard shows: step timeline with durations, extracted outputs, HITL intervention cards, annotated failure screenshots, and the full filterable event log.
+
+---
+
+## Testing — What to Try and What to Expect
+
+### Chat UI tests
+
+Open `http://localhost:5000` after running `python main.py`.
+
+| What you type Expected result                  |                                                             |
+| ---------------------------------------------- | ----------------------------------------------------------- |
+| `What is Alice's balance?`                     | ✅ Alice Johnson — Balance: $4,521.00, Status: Active        |
+| `Check member 100002`                          | ✅ Bob Martinez — Balance: $12,340.50, Status: Active        |
+| `What is Carol's status?`                      | ✅ Carol Williams — Balance: $750.25, Status: Frozen         |
+| `What is David's balance?`                     | ✅ David Lee — Balance: $88,000.00, Status: Active           |
+| `Check member 000000`                          | ⚑ Business outcome: "No record found for Member ID: 000000" |
+| `Freeze Carol's account`                       | ✅ Carol Williams → Frozen (with modal confirmation)         |
+| `Reactivate account 100003`                    | ✅ Carol Williams → Active                                   |
+| `Close Eva's account`                          | ✅ Eva Chen → Closed                                         |
+| `Freeze Carol's account` (when already Frozen) | ⚠️ Warning: account already Frozen, no change made          |
+| `hello` / unrecognised input                   | Clarification prompt listing what the bot can do            |
+
+For each completed request the chat bubble shows `Xs · N steps` and a **🔍 View run details** button.
+
+### Replay mode tests
+
+```bash
+# Expected: success, balance=4521.0, account_status=Active, member_name=Alice Johnson
+python main.py --mode replay --member 100001
+
+# Expected: success, balance=750.25, account_status=Frozen (or Active if updated above)
+python main.py --mode replay --member 100003
+
+# Expected: business_outcome — "No record found for Member ID: 000000"
+python main.py --mode replay --member 000000
+
+```
+
+### HITL test
+
+```bash
+python main.py --mode hitl-test --auto
+
+```
+
+Expected terminal output:
+
+```
+[OK] Target app already running on :8080
+Injecting broken locators into Search button step...
+[!!] Broken locators injected into: s3_click_search
+Starting replay engine...
+
+  step_retry  s3_click_search  attempt 1  All 2 locator(s) exhausted...
+  step_retry  s3_click_search  attempt 2  All 2 locator(s) exhausted...
+  step_failed s3_click_search
+  [hitl] Intervention HITL_... saved
+  [hitl] Non-interactive mode: auto-resolving intervention
+  hitl_resolved  s3_click_search
+
+  HITL Test — Evidence Summary
+  Outcome type   : success
+  Steps done     : 5
+  Interventions  : 1
+
+```
+
+Check `evidence/interventions/` for the JSON record and `evidence/screenshots/` for the annotated screenshot.
+
+---
+
+## Test Members Reference
+
+| Member ID Name Balance Default Status  |                |            |                    |
+| -------------------------------------- | -------------- | ---------- | ------------------ |
+| `100001`                               | Alice Johnson  | $4,521.00  | Active             |
+| `100002`                               | Bob Martinez   | $12,340.50 | Active             |
+| `100003`                               | Carol Williams | $750.25    | Frozen             |
+| `100004`                               | David Lee      | $88,000.00 | Active             |
+| `100005`                               | Eva Chen       | $0.00      | Closed             |
+| `000000`                               | *(not found)*  | —          | → Business outcome |
+
+> **Note:** Status changes via `update_account_status` persist for the lifetime of the server process. A POST to `http://localhost:8080/api/reset` restores all seed data.
+
+---
+
+## Evidence Files Explained
+
+After running the system, `evidence/` contains:
+
+| `capability_artifact.json`      | The saved artifact from the discovery run — the core data contract
+| `discovery_run.log`             | NDJSON trace of the LLM agent's Observe→Decide→Act loop           
+| `replay_success.log`            | NDJSON trace of a successful deterministic replay                 
+| `replay_success_summary.json`   | Structured `ReplayResult` for the success case                    
+| `replay_failure_summary.json`   | Business outcome result (member 000000 not found)                 
+| `replay_hitl_test.log`          | Replay trace showing HITL escalation and resume                   
+| `replay_hitl_test_summary.json` | Result after human intervention                                   
+| `replay_business_outcome.log`   | Replay trace for an invalid member ID                             
+| `screenshots/`                  | Browser SS: `discovery_final.png`, `replay_final.png`, `failure_*.png`, `HITL_*_annotated.png`
+| `interventions/`                | JSON records of each HITL escalation with step, reason, URL, human notes
+| `jobs/{job_id}/`                | Per-chat-message evidence bundles (log + screenshots + interventions)   
+
+---
+
+## Architecture Overview
 
 ```
 User types: "Freeze Carol's account"
                 ↓
-① Intent Router (capabilities/registry.py)
-   Scores keywords → update_account_status
-   Extracts params → { member_id: "100003", new_status: "Frozen" }
+① Intent Router  (capabilities/registry.py)
+   Keyword scoring → update_account_status
+   Param extraction → { member_id: "100003", new_status: "Frozen" }
                 ↓
-② Capability Artifact (capabilities/update_status.py)
-   Typed JSON contract: steps, locators, outputs, safety policy
+② Capability Artifact  (capabilities/update_status.py)
+   Typed JSON: steps, locators, outputs, safety policy
                 ↓
-③ Replay Engine (engine/engine.py) — no LLM
+③ Replay Engine  (engine/engine.py)  — zero LLM
    Navigate → Select status → Type reason → Click Update → Confirm modal
    Error taxonomy: success | business_outcome | recoverable | hard_failure
+   HITL escalation: engine thread blocks on threading.Event, unblocked by chat UI
                 ↓
-④ Result → Chat UI
-   "✅ Account updated. Carol Williams → Frozen"
-   (Audit log updated; status persists in database.py)
+④ Chat UI  (ui/chat_app.py)
+   Live step progress via polling /api/job/{id}
+   HITL banner with "I've fixed it — Resume" button
+   Result: "✅ Account updated. Carol Williams → Frozen"
+   Audit log updated; status persists for session
+
 ```
 
-### What changed from the original design
+---
 
-| Problem | Fix |
-|---|---|
-| No user interface — only logs | Added `ui/` with a full chat UI at port 5000 |
-| HITL required Enter to start | Chat mode runs fully headless; HITL only for `--mode hitl-test` |
-| Update flow broken — no persistence | `database.py` module-level dict persists mutations within the process |
-| Update modal didn't pass new_status | Fixed `update.html` — JS syncs hidden fields before POST |
-| One monolithic file per layer | Split into `engine/`, `hitl/`, `capabilities/` packages |
-| Only one capability | Added `update_status` capability with select + modal confirmation |
+## Configuration
+
+No `.env` file is required for replay/chat modes. For discovery:
+
+| Variable Description  |                                          |
+| --------------------- | ---------------------------------------- |
+| `GROQ_API_KEY`        | Groq API key for the LLM discovery agent |
+
+The Groq model used is `openai/gpt-oss-safeguard-20b` (free tier, fast, supports tool-use). You can swap this in `src/discovery.py` line `GROQ_MODEL`.
 
 ---
 
-## Test Scenarios
+## Key Design Decisions
 
-| Member | Name | Balance | Status |
-|---|---|---|---|
-| `100001` | Alice Johnson | $4,521.00 | Active |
-| `100002` | Bob Martinez | $12,340.50 | Active |
-| `100003` | Carol Williams | $750.25 | Frozen |
-| `100004` | David Lee | $88,000.00 | Active |
-| `100005` | Eva Chen | $0.00 | Closed |
-| `000000` | — | — | → Business outcome (not found) |
+**Why Python over TypeScript?** Cleaner Groq SDK integration and simpler async for this particular use case.
+
+**Why Playwright over Selenium?** Accessibility tree access, CDP session control for HITL (keeping the same browser page object alive), and better locator APIs.
+
+**Why tool-use (function calling) over free-text prompting?** LLM outputs are structured and machine-parseable with no prompt-parsing brittleness. The agent literally calls `navigate_to`, `click_element`, `extract_data` etc. as typed functions.
+
+**Why a CLI-based HITL signal?** The mechanism (block a thread, wait for an event, resume) is production-correct. In production, replace `input()` with a WebSocket or REST endpoint — the intervention JSON is already serialized.
+
+**Why per-job evidence directories?** Keeps each user message's evidence isolated. `evidence/jobs/{job_id}/` contains the log, screenshots, and interventions for exactly one chat request — the dashboard can load any job by ID.
 
 ---
 
-## Evidence Files
+## Further Scope / Improvements
 
-After running, `evidence/` contains:
+See `REPORT.md` Section 7 (Cuts) for the full list. The most impactful next steps:
 
-| File | What it is |
-|---|---|
-| `replay_*.log` | NDJSON execution trace per run |
-| `screenshots/` | Browser state at key moments |
-| `interventions/` | HITL escalation records with annotated screenshots |
+1. **Artifact versioning + drift alerting** — replay on a schedule, compare locator success rates against baseline, auto-trigger rediscovery when drift is detected
+2. **Tenant override management** — small per-tenant JSON override files that prepend locators for fields labelled differently ("Account Number" vs "Member ID") without re-running full discovery
+3. **Capability registry API** — expose artifacts as a callable catalog (`GET /capabilities`, `POST /capabilities/{name}/invoke`) so AI agents can discover and invoke capabilities by name
+4. **Vision fallback** — if all accessibility-tree locators fail, send a screenshot to a vision model and ask it to identify the element's coordinates (last resort, with cost guardrails)
+5. **Proactive drift detection** — periodic scheduled replays that flag checkpoints starting to fail before they affect real users
+6. **Cost tracking** — log token usage per discovery run; the registry shows per-capability LLM cost amortised over N replay calls
+
+````
