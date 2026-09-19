@@ -1297,6 +1297,9 @@
 
         // ── HITL waiting ──────────────────────────────────────────────────────
         if (job.status === 'hitl_waiting') {
+          // First update the progress bubble to show ❌ on the failed step
+          // so the spinner stops before the HITL banner appears
+          updateProgressBubble(runRow, job);
           showHITLBanner(job, jobId, runRow);
           pollJob(jobId, runRow, attempt + 1);
           return;

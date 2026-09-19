@@ -140,6 +140,7 @@ def job_status(job_id: str):
         job = _jobs.get(job_id)
     if not job:
         return jsonify({"error": "unknown job"}), 404
+    
     # Inject live HITL context if waiting
     if hitl_bridge.is_waiting(job_id):
         ctx = hitl_bridge.get_context(job_id)
@@ -147,7 +148,8 @@ def job_status(job_id: str):
         job["hitl_step"] = ctx.get("step_id")
         job["hitl_reason"] = ctx.get("reason")
         job["hitl_url"] = ctx.get("url")
-        job["job_id"] = job_id
+        # Keep live_step and live_failed_step so progress bubble shows ❌
+    job["job_id"] = job_id
     return jsonify(job)
 
 

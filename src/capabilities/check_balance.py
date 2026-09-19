@@ -84,19 +84,19 @@ def build(target_url: str = "http://localhost:8080") -> CapabilityArtifact:
 
                 # correct locator
                 
-                # step_id="s3_click_search",
-                # action="click",
-                # locators=[
-                #     Locator("css",        "input[type='submit'][value='Search']", "Submit by value"),
-                #     Locator("aria-label", "Search",                               "Aria-label fallback"),
-                #     Locator("text",       "Search",                               "Text fallback"),
-
-                # force break one locator
                 step_id="s3_click_search",
                 action="click",
                 locators=[
-                    Locator("css", "button.__does_not_exist__", "Broken for HITL test"),
-                    Locator("aria-label", "__also_broken__",    "Broken fallback"),
+                    Locator("css",        "input[type='submit'][value='Search']", "Submit by value"),
+                    Locator("aria-label", "Search",                               "Aria-label fallback"),
+                    Locator("text",       "Search",                               "Text fallback"),
+
+                # force break one locator
+                # step_id="s3_click_search",
+                # action="click",
+                # locators=[
+                #     Locator("css", "button.__does_not_exist__", "Broken for HITL test"),
+                #     Locator("aria-label", "__also_broken__",    "Broken fallback"),
 
                 ],
                 description="Click the Search button",

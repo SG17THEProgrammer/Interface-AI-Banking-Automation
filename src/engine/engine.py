@@ -44,6 +44,31 @@ class ReplayResult:
     def to_dict(self) -> dict:
         return asdict(self)
 
+def _resolve_resume_url(url_after: str, parameters: dict, artifact) -> str:
+    """
+    After a human resolves a HITL intervention, figure out what URL
+    Playwright's headless page should navigate to so extraction works.
+
+    Priority:
+    1. If url_after contains /member/ already — use it directly
+    2. If we have member_id in parameters — build the member detail URL
+    3. Fall back to url_after as-is
+    """
+    import urllib.parse
+
+    # If the user ended up on a member detail page, use it
+    if url_after and "/member/" in url_after and "/update" not in url_after:
+        return url_after
+
+    # Try to construct from member_id parameter
+    member_id = parameters.get("member_id", "")
+    if member_id and artifact.target_url:
+        # target_url is like http://localhost:8080/search — strip the path
+        parsed   = urllib.parse.urlparse(artifact.target_url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        return f"{base_url}/member/{member_id}"
+
+    return url_after
 
 class ReplayEngine:
     def __init__(
@@ -97,7 +122,8 @@ class ReplayEngine:
              "params": self.guardrails.redact_dict(parameters)})
 
         try:
-            self.guardrails.validate_parameters(parameters, artifact.parameters)
+            self.guardrails.validate_parameters(
+                parameters, artifact.parameters)
         except ValueError as e:
             self._save_log(run_log, log_suffix, run_dir)
             return ReplayResult(
@@ -112,7 +138,7 @@ class ReplayEngine:
                 args=["--no-sandbox", "--start-maximized"],
                 slow_mo=300 if not self.headless else 0,
             )
-            ctx  = browser.new_context(viewport={"width": 1280, "height": 900})
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900})
             page = ctx.new_page()
             screenshot_path = None
             extracted: dict = {}
@@ -124,14 +150,16 @@ class ReplayEngine:
 
                     if on_step_start:
                         try:
-                            on_step_start(step.step_id, step.action, step.description)
+                            on_step_start(
+                                step.step_id, step.action, step.description)
                         except Exception:
                             pass
 
                     if step.action in ("assert", "extract") or steps_completed > 2:
                         outcome = check_for_business_outcome(page)
                         if outcome:
-                            log({"event": "business_outcome_detected", "outcome": outcome})
+                            log({"event": "business_outcome_detected",
+                                "outcome": outcome})
                             self._save_log(run_log, log_suffix, run_dir)
                             browser.close()
                             return ReplayResult(
@@ -143,12 +171,14 @@ class ReplayEngine:
                             )
 
                     if try_recover_page(page):
-                        log({"event": "recovered_blocking_condition", "step": step.step_id})
+                        log({"event": "recovered_blocking_condition",
+                            "step": step.step_id})
                         retries_used += 1
 
                     step_result = None
                     for attempt in range(self.max_retries + 1):
-                        step_result = execute_step(page, step, parameters, self.guardrails)
+                        step_result = execute_step(
+                            page, step, parameters, self.guardrails)
                         if step_result.get("success"):
                             break
                         if attempt < self.max_retries:
@@ -158,12 +188,14 @@ class ReplayEngine:
                             retries_used += 1
                             try_recover_page(page)
 
-                    log({"event": "step_done", "step_id": step.step_id, "result": step_result})
+                    log({"event": "step_done", "step_id": step.step_id,
+                        "result": step_result})
 
                     if not step_result.get("success"):
                         if on_step_failed:
                             try:
-                                on_step_failed(step.step_id, step_result.get("error", ""))
+                                on_step_failed(
+                                    step.step_id, step_result.get("error", ""))
                             except Exception:
                                 pass
                         screenshot_path = self._screenshot(
@@ -201,16 +233,31 @@ class ReplayEngine:
                                          "steps_completed": steps_completed},
                                 non_interactive=non_interactive,
                             )
-                            if hitl_result["resolved"]:
-                                log({"event": "hitl_resolved", "step_id": step.step_id,
-                                     "url_after": hitl_result["url_after"]})
-                                # Wait for page to settle after human intervention
-                                try:
-                                    page.wait_for_load_state("domcontentloaded", timeout=5000)
-                                except Exception:
-                                    pass
-                                steps_completed += 1
-                                continue
+
+                        if hitl_result["resolved"]:
+                            url_after = hitl_result.get("url_after", "")
+                            log({"event": "hitl_resolved", "step_id": step.step_id,
+                                 "url_after": url_after})
+                            # Navigate Playwright's page to where the user ended up.
+                            # The user resolved the issue in their own browser, so
+                            # Playwright's headless page is still on the old URL.
+                            # We ask the user (via the notes field) where they landed,
+                            # but we can also just navigate to the member page directly
+                            # by reading the member_id from parameters.
+                            try:
+                                target = _resolve_resume_url(
+                                    url_after, parameters, artifact)
+                                if target and target != page.url:
+                                    logger.info(
+                                        f"[engine] Navigating to resolved URL: {target}")
+                                    page.goto(
+                                        target, wait_until="domcontentloaded", timeout=15000)
+                                    page.wait_for_timeout(1000)
+                            except Exception as nav_err:
+                                logger.warning(
+                                    f"[engine] Could not navigate after HITL: {nav_err}")
+                            steps_completed += 1
+                            continue
 
                         self._save_log(run_log, log_suffix, run_dir)
                         browser.close()
@@ -232,7 +279,8 @@ class ReplayEngine:
                 log({"event": "extracting_outputs"})
                 for output_field in artifact.outputs:
                     try:
-                        val = extract_output(page, output_field, self.guardrails)
+                        val = extract_output(
+                            page, output_field, self.guardrails)
                         extracted[output_field.name] = val
                         log({"event": "output_extracted",
                              "field": output_field.name, "value": str(val)[:100]})
@@ -241,11 +289,14 @@ class ReplayEngine:
                              "field": output_field.name, "error": str(e)})
                         extracted[output_field.name] = None
 
-                screenshot_path = self._screenshot(page, "replay_final", run_dir)
-                log({"event": "replay_complete", "outputs": extracted, "steps": steps_completed})
+                screenshot_path = self._screenshot(
+                    page, "replay_final", run_dir)
+                log({"event": "replay_complete",
+                    "outputs": extracted, "steps": steps_completed})
 
             except Exception as e:
-                screenshot_path = self._screenshot(page, "replay_error", run_dir)
+                screenshot_path = self._screenshot(
+                    page, "replay_error", run_dir)
                 log({"event": "replay_error", "error": str(e),
                      "trace": traceback.format_exc()})
                 self._save_log(run_log, log_suffix, run_dir)
@@ -282,7 +333,8 @@ class ReplayEngine:
             page.screenshot(path=path)
             if reason and ("failure" in name or "hitl" in name.lower()):
                 from hitl.annotator import annotate_screenshot
-                annotate_screenshot(path, step_id or name, reason, page.url, path)
+                annotate_screenshot(path, step_id or name,
+                                    reason, page.url, path)
             return path
         except Exception:
             return ""

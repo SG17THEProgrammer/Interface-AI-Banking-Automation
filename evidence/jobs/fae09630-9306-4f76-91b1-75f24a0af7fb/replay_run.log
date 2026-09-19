@@ -1,0 +1,18 @@
+{"event": "replay_start", "capability": "check_member_balance", "params": {"member_id": "100001"}, "ts": "2026-09-19T09:55:32.331323+00:00"}
+{"event": "step_start", "step_id": "s1_navigate", "action": "navigate", "url": "about:blank", "ts": "2026-09-19T09:55:38.202123+00:00"}
+{"event": "step_done", "step_id": "s1_navigate", "result": {"step_id": "s1_navigate", "action": "navigate", "success": true, "url": "http://localhost:8080/search", "checkpoint_passed": true}, "ts": "2026-09-19T09:55:39.851051+00:00"}
+{"event": "step_start", "step_id": "s2_type_id", "action": "type", "url": "http://localhost:8080/search", "ts": "2026-09-19T09:55:39.851051+00:00"}
+{"event": "step_done", "step_id": "s2_type_id", "result": {"step_id": "s2_type_id", "action": "type", "success": true, "strategy_used": "aria-label", "typed": "100001"}, "ts": "2026-09-19T09:55:40.443925+00:00"}
+{"event": "step_start", "step_id": "s3_click_search", "action": "click", "url": "http://localhost:8080/search", "ts": "2026-09-19T09:55:40.443925+00:00"}
+{"event": "step_retry", "step_id": "s3_click_search", "attempt": 1, "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n", "ts": "2026-09-19T09:55:50.482703+00:00"}
+{"event": "step_retry", "step_id": "s3_click_search", "attempt": 2, "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n", "ts": "2026-09-19T09:56:01.545462+00:00"}
+{"event": "step_done", "step_id": "s3_click_search", "result": {"step_id": "s3_click_search", "action": "click", "success": false, "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n"}, "ts": "2026-09-19T09:56:12.592446+00:00"}
+{"event": "step_failed", "step_id": "s3_click_search", "error": "All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_label(\"__also_broken__\").first to be visible\n", "screenshot": "C:\\Documents\\vs code\\Interface AI\\interface-ai\\src\\..\\evidence\\jobs\\fae09630-9306-4f76-91b1-75f24a0af7fb\\screenshots\\failure_s3_click_search.png", "ts": "2026-09-19T09:56:13.303362+00:00"}
+{"event": "hitl_resolved", "step_id": "s3_click_search", "url_after": "http://localhost:8080/search", "ts": "2026-09-19T09:56:53.315753+00:00"}
+{"event": "step_start", "step_id": "s4_assert_result", "action": "assert", "url": "http://localhost:8080/member/100001", "ts": "2026-09-19T09:56:54.703527+00:00"}
+{"event": "step_done", "step_id": "s4_assert_result", "result": {"step_id": "s4_assert_result", "action": "assert", "success": true}, "ts": "2026-09-19T09:56:55.296498+00:00"}
+{"event": "extracting_outputs", "ts": "2026-09-19T09:56:55.296498+00:00"}
+{"event": "output_extracted", "field": "balance", "value": "4521.0", "ts": "2026-09-19T09:56:55.316608+00:00"}
+{"event": "output_extracted", "field": "account_status", "value": "Active", "ts": "2026-09-19T09:56:55.336947+00:00"}
+{"event": "output_extracted", "field": "member_name", "value": "Alice Johnson", "ts": "2026-09-19T09:56:55.367195+00:00"}
+{"event": "replay_complete", "outputs": {"balance": 4521.0, "account_status": "Active", "member_name": "Alice Johnson"}, "steps": 4, "ts": "2026-09-19T09:56:55.424708+00:00"}
