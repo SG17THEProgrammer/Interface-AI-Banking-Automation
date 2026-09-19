@@ -69,6 +69,7 @@ class ReplayEngine:
         job_dir: str = None,
         hitl_job_id: str = None,      # ← when set, signals chat UI instead of terminal
         on_step_start=None,
+        on_step_failed=None,          # optional callback(step_id, error)
     ) -> ReplayResult:
         """
         job_dir: if provided, all evidence for this run (log, screenshots,
@@ -160,6 +161,11 @@ class ReplayEngine:
                     log({"event": "step_done", "step_id": step.step_id, "result": step_result})
 
                     if not step_result.get("success"):
+                        if on_step_failed:
+                            try:
+                                on_step_failed(step.step_id, step_result.get("error", ""))
+                            except Exception:
+                                pass
                         screenshot_path = self._screenshot(
                             page, f"failure_{step.step_id}", run_dir,
                             step_id=step.step_id,

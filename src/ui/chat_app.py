@@ -5,6 +5,8 @@ User-facing chat server (port 5000).
 """
 
 from __future__ import annotations
+from engine.engine import ReplayEngine
+from capabilities.registry import match, list_capabilities
 import base64
 import json
 import logging
@@ -19,18 +21,16 @@ import hitl_bridge
 from flask import Flask, render_template, request, jsonify
 
 _UI_DIR = os.path.dirname(os.path.abspath(__file__))
-_SRC    = os.path.dirname(_UI_DIR)
+_SRC = os.path.dirname(_UI_DIR)
 sys.path.insert(0, _SRC)
 
-from capabilities.registry import match, list_capabilities
-from engine.engine import ReplayEngine
 
 logger = logging.getLogger(__name__)
-app    = Flask(__name__, template_folder=os.path.join(_UI_DIR, "templates"))
+app = Flask(__name__, template_folder=os.path.join(_UI_DIR, "templates"))
 
 EVIDENCE_DIR = os.path.join(_SRC, "..", "evidence")
-JOBS_DIR     = os.path.join(EVIDENCE_DIR, "jobs")
-BANKING_URL  = "http://localhost:8080"
+JOBS_DIR = os.path.join(EVIDENCE_DIR, "jobs")
+BANKING_URL = "http://localhost:8080"
 
 _jobs: dict[str, dict] = {}
 _lock = threading.Lock()
@@ -42,7 +42,14 @@ _lock = threading.Lock()
 class _HealthFilter(logging.Filter):
     def filter(self, record):
         msg = record.getMessage()
-        return "/health" not in msg and "/api/health-proxy" not in msg
+        if "/health" in msg:
+            return False
+        if "/api/health-proxy" in msg:
+            return False
+        if "/api/job/" in msg and ("GET" in msg) and ("200" in msg):
+            return False
+        return True
+
 
 logging.getLogger("werkzeug").addFilter(_HealthFilter())
 
@@ -63,13 +70,13 @@ def dashboard():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    data    = request.get_json(force=True)
+    data = request.get_json(force=True)
     message = (data.get("message") or "").strip()
     if not message:
         return jsonify({"error": "empty message"}), 400
 
     job_id = str(uuid.uuid4())
-    cap    = match(message)
+    cap = match(message)
 
     if cap is None:
         return jsonify({
@@ -109,7 +116,8 @@ def chat():
             })
 
     with _lock:
-        _jobs[job_id] = {"status": "running", "capability": cap.name, "started": time.time()}
+        _jobs[job_id] = {"status": "running",
+                         "capability": cap.name, "started": time.time()}
 
     threading.Thread(
         target=_run,
@@ -135,10 +143,10 @@ def job_status(job_id: str):
     # Inject live HITL context if waiting
     if hitl_bridge.is_waiting(job_id):
         ctx = hitl_bridge.get_context(job_id)
-        job["status"]       = "hitl_waiting"
-        job["hitl_step"]    = ctx.get("step_id")
-        job["hitl_reason"]  = ctx.get("reason")
-        job["hitl_url"]     = ctx.get("url")
+        job["status"] = "hitl_waiting"
+        job["hitl_step"] = ctx.get("step_id")
+        job["hitl_reason"] = ctx.get("reason")
+        job["hitl_url"] = ctx.get("url")
         job["job_id"] = job_id
     return jsonify(job)
 
@@ -235,8 +243,14 @@ def audit_log():
 def job_resolve(job_id: str):
     """Human has resolved the intervention — unblock the engine thread."""
     if not hitl_bridge.is_waiting(job_id):
-        # Already resolved — return ok silently (idempotent)
         return jsonify({"ok": True, "already_resolved": True})
+    notes = (request.get_json(force=True) or {}).get("notes", "")
+    hitl_bridge.resolve(job_id, notes)
+    with _lock:
+        if job_id in _jobs:
+            _jobs[job_id]["status"] = "running"
+    return jsonify({"ok": True})
+
 
 @app.route("/api/job/<job_id>/hitl")
 def job_hitl_status(job_id: str):
@@ -245,6 +259,7 @@ def job_hitl_status(job_id: str):
         return jsonify({"waiting": False})
     ctx = hitl_bridge.get_context(job_id)
     return jsonify({"waiting": True, **ctx})
+
 
 @app.route("/api/health-proxy")
 def health_proxy():
@@ -265,6 +280,16 @@ def _run(job_id: str, cap, subject_label: str):
     try:
         hitl_bridge.register_job(job_id)
 
+        def _on_step_failed(step_id: str, error: str):
+            with _lock:
+                if job_id in _jobs:
+                    _jobs[job_id]["live_failed_step"] = step_id
+                    _jobs[job_id]["live_step"] = {
+                        "step_id":     step_id,
+                        "action":      "failed",
+                        "description": error[:120],
+                    }
+
         # Live progress: write current step to job dict during execution
         # The engine calls this via a callback
         def _on_step(step_id: str, action: str, description: str):
@@ -284,7 +309,7 @@ def _run(job_id: str, cap, subject_label: str):
         )
 
         artifact = cap.artifact
-        params   = cap.parameters
+        params = cap.parameters
 
         if artifact.name == "update_account_status":
             _patch_update_url(artifact, params)
@@ -297,6 +322,7 @@ def _run(job_id: str, cap, subject_label: str):
             job_dir=job_dir,
             hitl_job_id=job_id,        # engine uses this to signal UI
             on_step_start=_on_step,
+            on_step_failed=_on_step_failed,
         )
 
         with _lock:
@@ -346,7 +372,7 @@ def _subject_label(params: dict) -> str:
 
 
 def _check_already_same_status(params: dict) -> str | None:
-    mid        = params.get("member_id", "")
+    mid = params.get("member_id", "")
     new_status = params.get("new_status", "")
     if not mid or not new_status:
         return None
@@ -354,7 +380,7 @@ def _check_already_same_status(params: dict) -> str | None:
         with urllib.request.urlopen(f"{BANKING_URL}/api/member/{mid}", timeout=2) as r:
             data = json.loads(r.read())
         current = data.get("account_status", "")
-        name    = data.get("name", f"Member {mid}")
+        name = data.get("name", f"Member {mid}")
         if current.lower() == new_status.lower():
             return f"{name}'s account is already {current}. No changes were made."
     except Exception:
@@ -367,7 +393,7 @@ def _patch_update_url(artifact, params: dict):
     for step in artifact.steps:
         if step.action == "navigate" and step.input_value and "{member_id}" in step.input_value:
             step.input_value = step.input_value.replace("{member_id}", mid)
-            step.input_var   = None
+            step.input_var = None
             break
 
 
@@ -378,14 +404,16 @@ def _format_reply(capability: str, result, params: dict, subject_label: str) -> 
         step = result.failed_step_id or "unknown"
         return f"❌ Automation failed at step `{step}`.\n{result.error or ''}"
     if capability == "check_member_balance":
-        name    = result.outputs.get("member_name") or subject_label
+        name = result.outputs.get("member_name") or subject_label
         balance = result.outputs.get("balance")
-        status  = result.outputs.get("account_status", "")
-        bal_str = f"${balance:,.2f}" if isinstance(balance, (int, float)) else str(balance)
+        status = result.outputs.get("account_status", "")
+        bal_str = f"${balance:,.2f}" if isinstance(
+            balance, (int, float)) else str(balance)
         return f"✅ **{name}**\n• Balance: **{bal_str}**\n• Status: **{status}**"
     if capability == "update_account_status":
-        name       = result.outputs.get("member_name") or subject_label
-        new_status = result.outputs.get("updated_status") or params.get("new_status", "")
+        name = result.outputs.get("member_name") or subject_label
+        new_status = result.outputs.get(
+            "updated_status") or params.get("new_status", "")
         return f"✅ Account updated for **{name}**.\n• New status: **{new_status}**"
     return f"✅ Done. {result.outputs}"
 

@@ -1008,7 +1008,7 @@
             style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted)">✕</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">
-          <div class="member-card" onclick="fill(&quot;What is Alice Johnson's balance?&quot;)">
+          <div class="member-card" onclick="fill('What is Alice Johnson\'s balance?')">
             <div class="member-id">100001</div>
             <div class="member-name">Alice Johnson</div>
             <div class="member-status active">Active · Savings · $4,521.00</div>
@@ -1028,7 +1028,7 @@
             <div class="member-name">David Lee</div>
             <div class="member-status active">Active · Investment · $88,000.00</div>
           </div>
-          <div class="member-card" onclick="fill(&quot;What is Eva's balance?&quot;)">
+          <div class="member-card" onclick="fill('What is Eva\'s balance?')">
             <div class="member-id">100005</div>
             <div class="member-name">Eva Chen</div>
             <div class="member-status closed">Closed · Checking · $0.00</div>
@@ -1281,21 +1281,19 @@
     }
 
     async function pollJob(jobId, runRow, attempt = 0) {
-      if (attempt > 240) {  // 6 min max
+      if (attempt > 120) {
         runRow.querySelector('.bubble').innerHTML = '❌ Request timed out.';
         return;
       }
-      await sleep(1200);
+
+      // Exponential backoff: fast at start, slower over time
+      // 0-10 attempts: 1.2s, 10-20: 2s, 20+: 4s
+      const delay = attempt < 10 ? 1200 : attempt < 20 ? 2000 : 4000;
+      await sleep(delay);
+
       try {
         const res = await fetch(`/api/job/${jobId}`);
         const job = await res.json();
-
-        // ── Live step progress (status=running) ──────────────────────────────
-        if (job.status === 'running') {
-          updateProgressBubble(runRow, job);
-          pollJob(jobId, runRow, attempt + 1);
-          return;
-        }
 
         // ── HITL waiting ──────────────────────────────────────────────────────
         if (job.status === 'hitl_waiting') {
@@ -1304,8 +1302,17 @@
           return;
         }
 
-        // Clear any HITL banner when status returns to running/done
-        runRow.querySelector('.hitl-banner')?.remove();
+        // Clear HITL banner when no longer waiting
+        if (job.status !== 'hitl_waiting') {
+          runRow.querySelector('.hitl-banner')?.remove();
+        }
+
+        // ── Live step progress ────────────────────────────────────────────────
+        if (job.status === 'running') {
+          updateProgressBubble(runRow, job);
+          pollJob(jobId, runRow, attempt + 1);
+          return;
+        }
 
         if (job.status !== 'done') {
           pollJob(jobId, runRow, attempt + 1);
@@ -1330,8 +1337,13 @@
           `🔍 View run details</a>`;
         scroll();
         saveHistory();
-      } catch {
-        runRow.querySelector('.bubble').innerHTML = '❌ Lost connection while waiting for result.';
+      } catch (e) {
+        // Network error — retry silently unless too many attempts
+        if (attempt > 10) {
+          runRow.querySelector('.bubble').innerHTML = '❌ Lost connection while waiting for result.';
+          return;
+        }
+        pollJob(jobId, runRow, attempt + 1);
       }
     }
 
@@ -1352,12 +1364,18 @@
 
     function updateProgressBubble(runRow, job) {
       const bubble = runRow.querySelector('.bubble');
+
+      // If HITL banner already showing, don't overwrite it
+      if (runRow.querySelector('.hitl-banner')) return;
+
       const live = job.live_step;
 
       if (!live) {
-        // Just started, no step yet
-        bubble.innerHTML = `<div style="color:var(--text-muted);font-size:13px">
-      ⚙️ Initialising automation…</div>`;
+        bubble.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:13px">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);animation:pulse 1s infinite;flex-shrink:0"></span>
+        Initialising automation…
+      </div>`;
         return;
       }
 
@@ -1367,36 +1385,51 @@
       const log = _stepLog[jobId];
       const label = ACTION_LABELS[live.action] || { icon: '⚡', verb: 'Running' };
       const desc = live.description || live.step_id;
-      const entry = `${label.icon} ${label.verb} <span style="color:var(--brand);font-weight:500">${esc(desc)}</span>`;
 
-      // Only add if this step isn't already the last one
+      // Only add if this step isn't already the last entry
       const last = log[log.length - 1];
       if (!last || last.id !== live.step_id) {
-        // Mark previous step as done
-        if (last) last.done = true;
-        log.push({ id: live.step_id, html: entry, done: false });
+        if (last && !last.done && !last.failed) last.done = true;
+        log.push({ id: live.step_id, action: live.action, html: `${label.icon} ${label.verb} <strong>${esc(desc)}</strong>`, done: false, failed: false });
       }
 
-      // Render the log
-      const lines = log.map((l, i) => {
-        if (l.done) {
-          return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--text-muted);font-size:12.5px">
-        <span style="color:#16803c;font-size:11px">✓</span>
-        <span style="text-decoration:none;opacity:.7">${l.html}</span>
+      // Check if job signalled a failed step
+      const failedStep = job.live_failed_step;
+      if (failedStep) {
+        log.forEach(entry => {
+          if (entry.id === failedStep && !entry.done) {
+            entry.failed = true;
+            entry.done = true;
+          }
+        });
+      }
+
+      const lines = log.map(l => {
+        if (l.failed) {
+          return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12.5px">
+        <span style="color:#dc2626;font-size:13px;flex-shrink:0">✗</span>
+        <span style="color:#dc2626;opacity:.9">${l.html}</span>
+        <span style="font-size:10.5px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;padding:1px 6px;border-radius:3px;margin-left:4px">failed</span>
       </div>`;
         }
-        // Current step — show with pulsing indicator
-        return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px">
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);animation:pulse 1s infinite"></span>
+        if (l.done) {
+          return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12.5px">
+        <span style="color:#16803c;font-size:13px;flex-shrink:0">✓</span>
+        <span style="color:var(--text-muted);opacity:.75">${l.html}</span>
+      </div>`;
+        }
+        // Active step
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);animation:pulse 1s infinite;flex-shrink:0"></span>
       <span>${l.html}</span>
     </div>`;
       }).join('');
 
       bubble.innerHTML = `
-    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+    <div style="font-size:10.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">
       🤖 Automation in progress
     </div>
-    ${lines}`;
+    <div style="display:flex;flex-direction:column;gap:2px">${lines}</div>`;
       scroll();
     }
 

@@ -1286,3 +1286,44 @@ TypeError: The view function for 'job_resolve' did not return a valid response. 
 2026-09-18 22:42:50,396  INFO     werkzeug — 127.0.0.1 - - [18/Sep/2026 22:42:50] "GET /api/job/bcae17cd-abe8-4250-aded-5a2e1afb31d6 HTTP/1.1" 200 -
 2026-09-18 22:42:51,750  INFO     werkzeug — 127.0.0.1 - - [18/Sep/2026 22:42:51] "GET /api/job/bcae17cd-abe8-4250-aded-5a2e1afb31d6 HTTP/1.1" 200 -
 2026-09-18 22:42:53,741  INFO     werkzeug — 127.0.0.1 - - [18/Sep/2026 22:42:53] "GET /api/job/bcae17cd-abe8-4250-aded-5a2e1afb31d6 HTTP/1.1" 200 -
+2026-09-19 13:29:28,545  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.1.8:8080
+2026-09-19 13:29:28,546  INFO     werkzeug — Press CTRL+C to quit
+2026-09-19 13:29:29,486  INFO     werkzeug — WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-09-19 13:29:29,487  INFO     werkzeug — Press CTRL+C to quit
+2026-09-19 13:29:32,754  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:29:32] "GET / HTTP/1.1" 200 -
+2026-09-19 13:29:52,993  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:29:52] "GET / HTTP/1.1" 200 -
+2026-09-19 13:30:10,983  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:30:10] "GET /api/member/100001 HTTP/1.1" 200 -
+2026-09-19 13:30:10,984  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:30:10] "POST /api/chat HTTP/1.1" 200 -
+2026-09-19 13:30:17,699  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:30:17] "GET /search HTTP/1.1" 200 -
+2026-09-19 13:30:29,379  WARNING  engine.executor — [executor] Step s3_click_search failed: All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_label("__also_broken__").first to be visible
+
+2026-09-19 13:30:40,431  WARNING  engine.executor — [executor] Step s3_click_search failed: All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_label("__also_broken__").first to be visible
+
+2026-09-19 13:30:51,492  WARNING  engine.executor — [executor] Step s3_click_search failed: All 2 locator(s) exhausted. Last error: Locator.wait_for: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_label("__also_broken__").first to be visible
+
+2026-09-19 13:30:52,415  WARNING  hitl.controller — [hitl] Intervention HITL_20260919_080052_001 saved
+2026-09-19 13:30:52,420  WARNING  hitl.controller — [hitl] Waiting for browser resolution of HITL_20260919_080052_001
+2026-09-19 13:31:19,153  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:31:19] "GET /search HTTP/1.1" 200 -
+2026-09-19 13:31:36,064  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:31:36] "POST /search HTTP/1.1" 200 -
+2026-09-19 13:32:14,795  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:32:14] "GET /member/100001 HTTP/1.1" 200 -
+2026-09-19 13:32:22,118  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:32:22] "POST /api/job/332e5f3f-a2ec-4202-9178-472628b90d7c/resolve HTTP/1.1" 200 -
+2026-09-19 13:32:22,194  WARNING  engine.executor — [executor] Step s4_assert_result failed: None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search
+2026-09-19 13:32:23,234  WARNING  engine.executor — [executor] Step s4_assert_result failed: None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search
+2026-09-19 13:32:24,271  WARNING  engine.executor — [executor] Step s4_assert_result failed: None of ['#balance-amount', '#member-not-found'] visible on http://localhost:8080/search
+2026-09-19 13:32:24,539  WARNING  hitl.controller — [hitl] Intervention HITL_20260919_080224_002 saved
+2026-09-19 13:32:24,543  WARNING  hitl.controller — [hitl] Waiting for browser resolution of HITL_20260919_080224_002
+2026-09-19 13:32:56,803  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:32:56] "GET /member/100001 HTTP/1.1" 200 -
+2026-09-19 13:33:01,858  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:33:01] "POST /api/job/332e5f3f-a2ec-4202-9178-472628b90d7c/resolve HTTP/1.1" 200 -
+2026-09-19 13:33:57,987  INFO     werkzeug — 127.0.0.1 - - [19/Sep/2026 13:33:57] "GET / HTTP/1.1" 200 -
