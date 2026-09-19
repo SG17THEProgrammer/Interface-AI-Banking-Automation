@@ -11,7 +11,6 @@ This system implements a "Record Once → Replay Deterministically" engine for a
 
 
 ````
-
 [Goal + Target URL]
 
         ↓
@@ -29,7 +28,6 @@ This system implements a "Record Once → Replay Deterministically" engine for a
         ↓ handles
 
 ④ HITL Escalation  (human takes live session, then hands back)
-
 ````
 
 **Core Abstractions:**
@@ -46,6 +44,7 @@ This system implements a "Record Once → Replay Deterministically" engine for a
 **Trade-offs made:**
 
 | Decision | Why |
+|----------|-----|
 | Python over TypeScript | Cleaner Groq SDK integration, simpler threading for HITL |
 | Playwright over Selenium | Accessibility tree access, CDP session control for HITL, better locator APIs |
 | Tool-use (function calling) over free text | LLM outputs are structured and machine-parseable; no prompt-parsing brittleness |
@@ -205,8 +204,7 @@ The artifact's `locators` array is the override point. The base artifact ships w
 
 The Replay engine merges tenant overrides at load time. One discovery run serves 500 tenants, with only their locator differences captured in small JSON files — not full re-recordings. The schema for this is designed; the file loader and merge logic is in the cut list (Section 7) to keep the core engine focused and testable.
 
-**Drift per tenant**: Each tenant's override file can also carry a `last_verified` timestamp. A scheduled replay against each tenant would compare locator success rates to a baseline and flag the tenant when its primary locator starts failing, triggering a targeted re-discovery of just that step.
-
+*Drift per tenant*: Each tenant's override file can also carry a `last_verified` timestamp. A scheduled replay against each tenant would compare locator success rates to a baseline and flag the tenant when its primary locator starts failing, triggering a targeted re-discovery of just that step.
 ---
 
 ## 5. Escalation & Handoff
@@ -243,7 +241,6 @@ Human resolves in the live browser, presses ENTER
 Automation reads new page.url
   → Logs resolution with duration + human notes
   → Continues next step
-
 ```
 
 **Chat UI mode** (used by the web interface):
@@ -261,7 +258,6 @@ Operator navigates to banking app, performs action manually, clicks Resume
 Engine thread unblocks
   → Navigates headless Playwright page to member detail URL
   → Logs hitl_resolved, continues next step
-
 ```
 
 ### Production Upgrade Path
