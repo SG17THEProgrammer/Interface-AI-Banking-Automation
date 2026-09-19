@@ -10,7 +10,6 @@ A production-grade "Record Once → Replay Deterministically" engine that automa
 The system has four layers that execute in strict sequence:
 
 ```
-
 [Goal + Target URL]
 
          ↓
@@ -28,7 +27,6 @@ The system has four layers that execute in strict sequence:
          ↓ handles
 
 ④ HITL Escalation  (human takes the live browser session, then hands back)
-
 ```
 
 **Two capabilities are implemented end-to-end:**
@@ -134,8 +132,6 @@ playwright install chromium
 
 # 5. Set your Groq API key in env file
 GROQ_API_KEY=gsk_your_key_here
-
-
 ````
 
 > **No Groq key?** The chat UI and all replay modes work without a key — only the `discovery` mode requires it. The repo already ships a saved `evidence/capability_artifact.json` so you can run everything else immediately.
@@ -267,7 +263,7 @@ The dashboard shows: step timeline with durations, extracted outputs, HITL inter
 
 Open `http://localhost:5000` after running `python main.py`.
 
-| What you type Expected result                  |                                                             |
+| What you type                                  |  Expected result                                            |
 | ---------------------------------------------- | ----------------------------------------------------------- |
 | `What is Alice's balance?`                     | ✅ Alice Johnson — Balance: $4,521.00, Status: Active        |
 | `Check member 100002`                          | ✅ Bob Martinez — Balance: $12,340.50, Status: Active        |
@@ -331,14 +327,14 @@ Check `evidence/interventions/` for the JSON record and `evidence/screenshots/` 
 
 ## Test Members Reference
 
-| Member ID Name Balance Default Status  |                |            |                    |
-| -------------------------------------- | -------------- | ---------- | ------------------ |
-| `100001`                               | Alice Johnson  | $4,521.00  | Active             |
-| `100002`                               | Bob Martinez   | $12,340.50 | Active             |
-| `100003`                               | Carol Williams | $750.25    | Frozen             |
-| `100004`                               | David Lee      | $88,000.00 | Active             |
-| `100005`                               | Eva Chen       | $0.00      | Closed             |
-| `000000`                               | *(not found)*  | —          | → Business outcome |
+| Member ID | Name | Balance | Default Status |
+|-----------|------|----------|----------------|
+| `100001` | Alice Johnson | $4,521.00 | Active |
+| `100002` | Bob Martinez | $12,340.50 | Active |
+| `100003` | Carol Williams | $750.25 | Frozen |
+| `100004` | David Lee | $88,000.00 | Active |
+| `100005` | Eva Chen | $0.00 | Closed |
+| `000000` | *(not found)* | — | → Business outcome |
 
 > **Note:** Status changes via `update_account_status` persist for the lifetime of the server process. A POST to `http://localhost:8080/api/reset` restores all seed data.
 
@@ -393,7 +389,7 @@ User types: "Freeze Carol's account"
 
 No `.env` file is required for replay/chat modes. For discovery:
 
-| Variable Description  |                                          |
+| Variable              |   Description                            |         
 | --------------------- | ---------------------------------------- |
 | `GROQ_API_KEY`        | Groq API key for the LLM discovery agent |
 
@@ -425,5 +421,3 @@ See `REPORT.md` Section 7 (Cuts) for the full list. The most impactful next step
 4. **Vision fallback** — if all accessibility-tree locators fail, send a screenshot to a vision model and ask it to identify the element's coordinates (last resort, with cost guardrails)
 5. **Proactive drift detection** — periodic scheduled replays that flag checkpoints starting to fail before they affect real users
 6. **Cost tracking** — log token usage per discovery run; the registry shows per-capability LLM cost amortised over N replay calls
-
-````
